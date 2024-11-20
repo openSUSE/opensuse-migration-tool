@@ -118,7 +118,7 @@ EOL
 	zypper dup --allow-vendor-change --force-resolution -y
 # to tumbleweed
 elif [ "$CHOICE" == "2" ]; then
-        zypper ar -f -c http://download.opensuse.org/tumbleweed/repo/oss
+        zypper ar -f -c http://download.opensuse.org/tumbleweed/repo/oss repo-oss
         zypper in openSUSE-repos-Tumbleweed
 	zypper dup --allow-vendor-change --force-resolution -y
 # to slowroll
@@ -128,7 +128,7 @@ elif [ "$CHOICE" = "3" ]; then
 	zypper dup --allow-vendor-change --force-resolution -y
 # to 16.0
 elif [ "$CHOICE" == "4" ]; then
-        zypper ar -f -c http://download.opensuse.org/16.0/repo/oss
+        zypper ar -f -c http://download.opensuse.org/16.0/repo/oss repo-sle16
 	zypper in Leap-release
 fi
 
