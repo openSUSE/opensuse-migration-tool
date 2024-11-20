@@ -78,8 +78,22 @@ CHOICE=$(dialog --clear \
     "${DIALOG_ITEMS[@]}" \
     2>&1 >/dev/tty)
 
-mkdir /etc/zypp/repos.d/old
-mv /etc/zypp/repos.d/*.repo /etc/zypp/repos.d/old
+zypper in snapper
+
+rpmsave_repo() {
+for repo_file in \
+repo-backports-debug-update.repo repo-oss.repo repo-backports-update.repo \
+repo-sle-debug-update.repo repo-debug-non-oss.repo repo-sle-update.repo \
+repo-debug.repo repo-source.repo repo-debug-update.repo repo-update.repo \
+repo-debug-update-non-oss.repo repo-update-non-oss.repo repo-non-oss.repo \
+download.opensuse.org-oss.repo download.opensuse.org-non-oss.repo download.opensuse.org-tumbleweed.repo \
+repo-openh264.repo openSUSE-*-0.repo repo-main.repo; do
+  if [ -f %{_sysconfdir}/zypp/repos.d/$repo_file ]; then
+    echo "Content of $repo_file will be newly managed by zypp-services."
+    echo "Storing old copy as %{_sysconfdir}/zypp/repos.d/$repo_file.rpmsave"
+    mv %{_sysconfdir}/zypp/repos.d/$repo_file %{_sysconfdir}/zypp/repos.d/$repo_file.rpmsave
+  fi
+}
 
 # Clear the screen and handle the user choice
 clear
@@ -93,13 +107,15 @@ ID="sles"
 ID_LIKE="suse"
 ANSI_COLOR="0;32" 
 CPE_NAME="cpe:/o:suse:sles:15:sp6"
+DOCUMENTATION_URL="https://documentation.suse.com/"
 EOL
 	zypper in suseconnect-ng
+	rpmsave_repo
 	suseconnect -e  email -r number 
 	suseconnect -p sle-module-basesystem/15.6/x86_64
 	zypper in sles-release
-	zypper dup
 	SUSEConnect -p PackageHub/15.SP6/x86_64
+	zypper dup --allow-vendor-change --force-resolution -y
 # to tumbleweed
 elif [ "$CHOICE" == "2" ]; then
         zypper ar -f -c http://download.opensuse.org/tumbleweed/repo/oss
