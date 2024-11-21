@@ -78,7 +78,7 @@ CHOICE=$(dialog --clear \
     "${DIALOG_ITEMS[@]}" \
     2>&1 >/dev/tty)
 
-zypper in snapper
+zypper in snapper grub2-snapper-plugin
 
 rpmsave_repo() {
 for repo_file in \
@@ -93,7 +93,10 @@ repo-openh264.repo openSUSE-*-0.repo repo-main.repo; do
     echo "Storing old copy as %{_sysconfdir}/zypp/repos.d/$repo_file.rpmsave"
     mv %{_sysconfdir}/zypp/repos.d/$repo_file %{_sysconfdir}/zypp/repos.d/$repo_file.rpmsave
   fi
+done
 }
+
+
 
 # Clear the screen and handle the user choice
 clear
@@ -109,12 +112,17 @@ ANSI_COLOR="0;32"
 CPE_NAME="cpe:/o:suse:sles:15:sp6"
 DOCUMENTATION_URL="https://documentation.suse.com/"
 EOL
+
 	zypper in suseconnect-ng
+	cp SLES.prod /etc/products.d/
+        rm -r /etc/products.d/baseproduct
+        ln -s /etc/products.d/SLES.prod /etc/products.d/baseproduct
 	rpmsave_repo
-	suseconnect -e  email -r number 
-	suseconnect -p sle-module-basesystem/15.6/x86_64
-	zypper in sles-release
-	SUSEConnect -p PackageHub/15.SP6/x86_64
+	rpm -e --nodeps openSUSE-release
+	read -p "Enter your email: " email
+	read -p "Enter your registration code: " code
+	suseconnect -e  email -r code 
+	SUSEConnect -p PackageHub/15.6/x86_64
 	zypper dup --allow-vendor-change --force-resolution -y
 # to tumbleweed
 elif [ "$CHOICE" == "2" ]; then

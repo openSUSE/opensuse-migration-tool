@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<product schemeversion="0">
+  <vendor>SUSE</vendor>
+  <name>SLES</name>
+  <version>15.6</version>
+  <baseversion>15</baseversion>
+  <patchlevel>6</patchlevel>
+  <release>0</release>
+  <endoflife></endoflife>
+  <arch>x86_64</arch>
+  <cpeid>cpe:/o:suse:sles:15:sp6</cpeid>
+  <productline>sles</productline>
+  <codestream>
+    <name>SUSE Linux Enterprise Server 15</name>
+    <endoflife>2031-07-31</endoflife>
+  </codestream>
+  <register>
+      <target>sle-15-x86_64</target>
+  </register>
+  <repositories>
+      <repository type="update" repoid="obsrepository://build.suse.de/SUSE:Updates:SLE-Product-SLES:15-SP6:x86_64/update" />
+      <repository type="update" repoid="obsrepository://build.suse.de/SUSE:Updates:SLE-Product-SLES:15-SP6:x86_64/update_debug" />
+      <repository type="update" repoid="obsrepository://build.suse.de/SUSE:Updates:SLE-INSTALLER:15-SP6:x86_64/update" />
+      <repository type="pool" repoid="obsproduct://build.suse.de/SUSE:Products:SLE-Product-SLES:15-SP6:x86_64/SLES/15.6/x86_64" />
+  </repositories>
+  <summary>SUSE Linux Enterprise Server 15 SP6</summary>
+  <shortsummary>SLES15-SP6</shortsummary>
+  <description>SUSE Linux Enterprise offers a comprehensive
+        suite of products built on a single code base.
+        The platform addresses business needs from
+        the smallest thin-client devices to the world's
+        most powerful high-performance computing
+        and mainframe servers. SUSE Linux Enterprise
+        offers common management tools and technology
+        certifications across the platform, and
+        each product is enterprise-class.</description>
+  <linguas>
+    <language>cs</language>
+    <language>da</language>
+    <language>de</language>
+    <language>en</language>
+    <language>en_GB</language>
+    <language>en_US</language>
+    <language>es</language>
+    <language>fi</language>
+    <language>fr</language>
+    <language>hu</language>
+    <language>it</language>
+    <language>ja</language>
+    <language>nb</language>
+    <language>nl</language>
+    <language>pl</language>
+    <language>pt</language>
+    <language>pt_BR</language>
+    <language>ru</language>
+    <language>sv</language>
+    <language>zh</language>
+    <language>zh_CN</language>
+    <language>zh_TW</language>
+  </linguas>
+  <urls>
+    <url name="releasenotes">https://www.suse.com/releasenotes/x86_64/SUSE-SLES/15-SP6/release-notes-sles.rpm</url>
+  </urls>
+  <buildconfig>
+    <producttheme>SLES</producttheme>
+  </buildconfig>
+  <installconfig>
+    <defaultlang>en_US</defaultlang>
+    <releasepackage name="sles-release" flag="EQ" version="15.6" release="150600.64.3.1"/>
+    <distribution>SUSE_SLE</distribution>
+  </installconfig>
+  <runtimeconfig/>
+  <productdependency relationship="provides" name="SUSE_SLE" baseversion="15" patchlevel="6" flag="EQ"/>
+  <productdependency relationship="provides" name="SUSE_SLE-SP6" baseversion="15" patchlevel="6" flag="EQ"/>
+</product>
+
