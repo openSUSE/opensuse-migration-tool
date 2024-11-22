@@ -128,11 +128,21 @@ elif [ "$CHOICE" == "2" ]; then
         zypper ar -f -c http://download.opensuse.org/tumbleweed/repo/oss repo-oss
         zypper in openSUSE-repos-Tumbleweed
 	zypper dup --allow-vendor-change --force-resolution -y
+	for repo in openSUSE-Leap*.repo openSUSE\:Leap*.repo; do
+        if [ -f /etc/zypp/repos.d/$repo ]; then
+                mv /etc/zypp/repos.d/$repo /etc/zypp/repos.d/$repo.rpmsave
+        fi
+        done
 # to slowroll
 elif [ "$CHOICE" = "3" ]; then
         zypper addrepo https://download.opensuse.org/slowroll/repo/oss/ leap-to-slowroll
 	shopt -s globstar && TMPSR=$(mktemp -d) && zypper --pkg-cache-dir=${TMPSR} download openSUSE-repos-Slowroll && zypper modifyrepo --all --disable && zypper install ${TMPSR}/**/openSUSE-repos-Slowroll*.rpm && zypper dist-upgrade
 	zypper dup --allow-vendor-change --force-resolution -y
+        for repo in openSUSE-Leap*.repo openSUSE\:Leap*.repo; do
+        if [ -f /etc/zypp/repos.d/$repo ]; then
+                mv /etc/zypp/repos.d/$repo /etc/zypp/repos.d/$repo.rpmsave
+        fi
+	done
 # to 16.0
 elif [ "$CHOICE" == "4" ]; then
         zypper ar -f -c http://download.opensuse.org/16.0/repo/oss repo-sle16
