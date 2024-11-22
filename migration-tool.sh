@@ -87,10 +87,10 @@ repo-debug.repo repo-source.repo repo-debug-update.repo repo-update.repo \
 repo-debug-update-non-oss.repo repo-update-non-oss.repo repo-non-oss.repo \
 download.opensuse.org-oss.repo download.opensuse.org-non-oss.repo download.opensuse.org-tumbleweed.repo \
 repo-openh264.repo openSUSE-*-0.repo repo-main.repo; do
-  if [ -f %{_sysconfdir}/zypp/repos.d/$repo_file ]; then
+  if [ -f /etc/zypp/repos.d/$repo_file ]; then
     echo "Content of $repo_file will be newly managed by zypp-services."
-    echo "Storing old copy as %{_sysconfdir}/zypp/repos.d/$repo_file.rpmsave"
-    mv %{_sysconfdir}/zypp/repos.d/$repo_file %{_sysconfdir}/zypp/repos.d/$repo_file.rpmsave
+    echo "Storing old copy as /etc/zypp/repos.d/$repo_file.rpmsave"
+    mv /etc/zypp/repos.d/$repo_file /etc/zypp/repos.d/$repo_file.rpmsave
   fi
 done
 }
