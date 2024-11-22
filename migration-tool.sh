@@ -86,7 +86,7 @@ repo-sle-debug-update.repo repo-debug-non-oss.repo repo-sle-update.repo \
 repo-debug.repo repo-source.repo repo-debug-update.repo repo-update.repo \
 repo-debug-update-non-oss.repo repo-update-non-oss.repo repo-non-oss.repo \
 download.opensuse.org-oss.repo download.opensuse.org-non-oss.repo download.opensuse.org-tumbleweed.repo \
-repo-openh264.repo openSUSE-*-0.repo repo-main.repo; do
+repo-openh264.repo openSUSE-*.repo repo-main.repo; do
   if [ -f /etc/zypp/repos.d/$repo_file ]; then
     echo "Content of $repo_file will be newly managed by zypp-services."
     echo "Storing old copy as /etc/zypp/repos.d/$repo_file.rpmsave"
@@ -123,6 +123,9 @@ EOL
 	suseconnect -e  email -r code 
 	SUSEConnect -p PackageHub/15.6/x86_64
 	zypper dup --allow-vendor-change --force-resolution -y
+	rpm -e --nodeps branding-openSUSE grub2-branding-openSUSE wallpaper-branding-openSUSE plymouth-branding-openSUSE systemd-presets-branding-openSUSE
+	zypper remove opensuse-welcome
+	zypper in branding-SLE-15 grub2-branding-SLE wallpaper-branding-SLE-15 plymouth-branding-SLE systemd-presets-branding-SLE
 # to tumbleweed
 elif [ "$CHOICE" == "2" ]; then
         zypper ar -f -c http://download.opensuse.org/tumbleweed/repo/oss repo-oss
