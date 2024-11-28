@@ -7,7 +7,8 @@ The tool was created during [Hackweek 24](https://hackweek.opensuse.org/24/proje
 It is still experimental and is not expected to be used in production until we have a proper test suite.
 It is fetching information about active point releases and pre-releases from get.opensuse.org api.
 
-![image](https://github.com/user-attachments/assets/08926da0-14d8-4f9c-b290-b98373025087)
+![image](https://github.com/user-attachments/assets/6c50e5f9-630b-4ead-a182-5e940376f2bf)
+
 
 
 
