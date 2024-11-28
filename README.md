@@ -5,7 +5,7 @@ openSUSE migration tool
 
 The tool was created during [Hackweek 24](https://hackweek.opensuse.org/24/projects/new-migration-tool-for-leap).
 It is still experimental and is not expected to be used in production until we have a proper test suite.
-It is fetching information about active point releases and pre-releases from get.opensuse.org api.
+It is fetching information about active point releases and pre-releases from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json).
 
 ![image](https://github.com/user-attachments/assets/6c50e5f9-630b-4ead-a182-5e940376f2bf)
 
