@@ -14,10 +14,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#set -x
-#set -euo pipefail
-# Trap to clean up on exit or interruption
-#trap 'clear; tput cnorm' EXIT INT TERM
+
+# For accessing files from git checkout
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 # Ensure required tools are installed
 REQUIRED_TOOLS=("bc" "jq" "curl" "dialog" "sed" "gawk")
 for tool in "${REQUIRED_TOOLS[@]}"; do
@@ -252,6 +252,11 @@ EOL
                 echo "Would write a SLES $SP like /etc/os-release"
             fi
 
+			if [ -f  "$SCRIPT_DIR/SLES.prod" ]; then
+				$DRYRUN cp $SCRIPT_DIR/SLES.prod /etc/products.d
+			else
+				$DRYRUN cp /usr/share/migration-tool/SLES.prod /etc/products.d
+			fi
 	        $DRYRUN cp SLES.prod /etc/products.d/
             $DRYRUN rm -r /etc/products.d/baseproduct
             $DRYRUN ln -s /etc/products.d/SLES.prod /etc/products.d/baseproduct
