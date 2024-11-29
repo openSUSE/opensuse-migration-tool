@@ -49,7 +49,7 @@ $ sudo opensuse-migration-tool
 $ exit && reboot # into new snapshot
 ```
 
-## Upgrading to pre releases such as Alpha, Beta
+### Upgrading to pre releases such as Alpha, Beta
 
 The --pre-release argument does the trick.
 We want to ensure that nobody accidentally upgrades their system to e.g. Alpha version of an upcoming release.
