@@ -32,18 +32,21 @@ I highly recommend testing the tool in a virtual machine or container via e.g. d
 ### Execution on a regular system such as Leap, Tumbleweed, Slowroll
 
 ```
-$ sudo zypper in migration-tool
-$ migration-tool --dry-run
-$ sudo migration-tool
+$ sudo zypper in opensuse-migration-tool
+$ opensuse-migration-tool --dry-run
+$ sudo opensuse-migration-tool
+$ reboot
 ```
 
 ### Execution on Immutable systems such as Leap Micro
 
 ```
 $ sudo transactional-update shell
-$ sudo zypper in migration-tool
-$ migration-tool --dry-run
-$ sudo migration-tool
+# Inside the shell
+$ sudo zypper in opensuse-migration-tool
+$ opensuse-migration-tool --dry-run
+$ sudo opensuse-migration-tool
+$ exit && reboot # into new snapshot
 ```
 
 ## Upgrading to pre releases such as Alpha, Beta
@@ -52,8 +55,9 @@ The --pre-release argument does the trick.
 We want to ensure that nobody accidentally upgrades their system to e.g. Alpha version of an upcoming release.
 
 ```
-./migration-tool.sh --pre-release --dry-run
-sudo ./migration-tool.sh --pre-release
+./opensuse-migration-tool --pre-release --dry-run
+sudo ./opensuse-migration-tool --pre-release
+
 ```
 
 ### Alternatively with git/distrobox (recommended for development)
@@ -63,21 +67,28 @@ Just be aware that the toolbox container won't be immutable inside, so no need f
 
 Please be aware that in such a container environment there could be an issue with updating bind-mounted files such as [/etc/hostname](https://bugzilla.opensuse.org/show_bug.cgi?id=1233982).
 ```
-$ git clone git@github.com:openSUSE/migration-tool.git
-$ cd migration-tool
+$ git clone git@github.com:openSUSE/opensuse-migration-tool.git
+$ cd opensuse-migration-tool
 $ distrobox create --image registry.opensuse.org/opensuse/leap-micro/6.0/toolbox --name micro60
 $ distrobox enter micro60
 $ zypper in bc jq curl dialog sed gawk
-$ ./migration-tool.sh --dry-run
-$ sudo ./migration-tool.sh
+$ ./opensuse-migration-tool --dry-run
+$ sudo ./opensuse-migration-tool
 ```
 
 ```
-$ git clone git@github.com:openSUSE/migration-tool.git
-$ cd migration-tool
+$ git clone git@github.com:openSUSE/opensuse-migration-tool.git
+$ cd opensuse-migration-tool
 $ distrobox create --image opensuse/leap:15.5 --name leap155
 $ distrobox enter leap155
 $ sudo zypper in bc jq curl dialog sed gawk
-$ ./migration-tool.sh --dry-run
-$ sudo ./migration-tool.sh
+$ ./opensuse-migration-tool --dry-run
+$ sudo ./opensuse-migration-tool
 ```
+## Documentation for a manual migration
+
+These are wiki that describe the manual upgrade process with zypper dup
+
+https://en.opensuse.org/SDB:System_upgrade
+https://en.opensuse.org/SDB:How_to_migrate_to_SLE
+https://en.opensuse.org/SDB:System_upgrade_to_LeapMicro_6.0
