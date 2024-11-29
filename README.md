@@ -7,9 +7,9 @@ It also supports migration from openSUSE Leap to SUSE Linux Enterprise.
 
 The tool is still experimental and is not expected to be used in production until we have a proper test suite.
 
-The tool gets information about point releases from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json), 
-and it utilizes [openSUSE-repos](https://github.com/openSUSE/openSUSE-repos) for a cross distribution migration.
-Getting openSUSE-repos from the target repo of an upgrade or migration takes away any manual tinkering of distribution repositories.
+The tool gets information about point releases from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json) 
+and also utilizes [openSUSE-repos](https://github.com/openSUSE/openSUSE-repos) for a cross distribution migration.
+Installing openSUSE-repos from the target repo of an upgrade or migration takes away any manual tinkering of distribution repositories.
 
 **Intended supported scenarios**
 ```
@@ -49,10 +49,16 @@ $ sudo opensuse-migration-tool
 $ exit && reboot # into new snapshot
 ```
 
-### Upgrading to pre releases such as Alpha, Beta
+### Upgrading to pre-releases such as Alpha, Beta
 
-The --pre-release argument does the trick.
-We want to ensure that nobody accidentally upgrades their system to e.g. Alpha version of an upcoming release.
+By default the tool with now show up Alpha, Beta, RC releases of point releases as viable targets.
+E.g. Leap Micro 6.1 Beta or Leap 16.9 Alpha.
+
+This is on purpose. We want to ensure that nobody accidentally upgrades their system to e.g. Alpha version of an upcoming release.
+
+The --pre-release argument does the trick, then we'll fetch information from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json) about all available releases which are not EOL.
+Default behavior is to fetch only releases with state "Stable" which means released/supported.
+
 
 ```
 ./opensuse-migration-tool --pre-release --dry-run
@@ -90,5 +96,7 @@ $ sudo ./opensuse-migration-tool
 These are wiki that describe the manual upgrade process with zypper dup
 
 https://en.opensuse.org/SDB:System_upgrade
+
 https://en.opensuse.org/SDB:How_to_migrate_to_SLE
+
 https://en.opensuse.org/SDB:System_upgrade_to_LeapMicro_6.0
