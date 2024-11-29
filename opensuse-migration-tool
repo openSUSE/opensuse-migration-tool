@@ -1,5 +1,6 @@
 #!/bin/bash
-# Migration-tool: Helps migrate to another product, mainly from openSUSE.
+# openSUSE migration and upgrade tool utilizes get.opensuse.org product API and openSUSE-repos
+# for a cross-distro migration and upgrade to a new versions of point releases.
 #
 # Copyright 2024 Marcela Maslanova, SUSE LLC
 #
@@ -57,7 +58,7 @@ declare -A MIGRATION_OPTIONS=()
 CURRENT_INDEX=1
 # Parse command-line arguments
 function print_help() {
-    echo "Usage: migration-tool [--pre-release] [--dry-run] [--help]"
+    echo "Usage: opensuse-migration-tool [--pre-release] [--dry-run] [--help]"
     echo "  --pre-release  Include pre-release versions in the migration options."
     echo "  --dry-run      Show commands without executing them."
     echo "  --help         Show this help message and exit."
@@ -255,7 +256,7 @@ EOL
 			if [ -f  "$SCRIPT_DIR/SLES.prod" ]; then
 				$DRYRUN cp $SCRIPT_DIR/SLES.prod /etc/products.d
 			else
-				$DRYRUN cp /usr/share/migration-tool/SLES.prod /etc/products.d
+				$DRYRUN cp /usr/share/opensuse-migration-tool/SLES.prod /etc/products.d
 			fi
 	        $DRYRUN cp SLES.prod /etc/products.d/
             $DRYRUN rm -r /etc/products.d/baseproduct
@@ -286,7 +287,7 @@ EOL
                 if [ "$ARCH" != "aarch64" ]; then 
                     # Let's not messup any systems and make sure this is properly implemented first
                     echo "Unsupported arch '$ARCH'."
-                    echo "Please open an issue at https://github.com/openSUSE/migration-tool/issues"
+                    echo "Please open an issue at https://github.com/openSUSE/opensuse-migration-tool/issues"
                     echo "Make sure to add output of 'uname -i' and content of your /etc/os-release into the ticket."
                     exit 1
                 fi
@@ -355,7 +356,7 @@ EOL
                 if [ "$ARCH" != "aarch64" ]; then 
                     # Let's not messup any systems and make sure this is properly implemented first
                     echo "Unsupported arch '$ARCH'."
-                    echo "Please open an issue at https://github.com/openSUSE/migration-tool/issues"
+                    echo "Please open an issue at https://github.com/openSUSE/opensuse-migration-tool/issues"
                     echo "Make sure to add output of 'uname -i' and content of your /etc/os-release into the ticket."
                     exit 1
                 fi
