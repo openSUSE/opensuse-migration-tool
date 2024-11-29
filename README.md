@@ -51,7 +51,7 @@ $ exit && reboot # into new snapshot
 
 ### Upgrading to pre-releases such as Alpha, Beta
 
-By default the tool with now show up Alpha, Beta, RC releases of point releases as viable targets.
+By default the tool with **not show up** Alpha, Beta, RC releases of point releases as viable targets for upgrade/migration.
 E.g. Leap Micro 6.1 Beta or Leap 16.9 Alpha.
 
 This is on purpose. We want to ensure that nobody accidentally upgrades their system to e.g. Alpha version of an upcoming release.
