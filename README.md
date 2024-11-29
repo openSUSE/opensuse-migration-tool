@@ -1,45 +1,83 @@
-# migration-tool
-openSUSE migration tool
-
-!!!DO NOT USE THE TOOL IN PRODUCTION!!!
+# openSUSE migration tool
 
 The tool was created during [Hackweek 24](https://hackweek.opensuse.org/24/projects/new-migration-tool-for-leap).
-It is still experimental and is not expected to be used in production until we have a proper test suite.
-It is fetching information about active point releases and pre-releases from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json).
+
+The goal is to simplify upgrades and cross-distribution upgrades within openSUSE distributions.
+It also supports migration from openSUSE Leap to SUSE Linux Enterprise.
+
+The tool is still experimental and is not expected to be used in production until we have a proper test suite.
+
+The tool gets information about point releases from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json), 
+and it utilizes [openSUSE-repos](https://github.com/openSUSE/openSUSE-repos) for a cross distribution migration.
+Getting openSUSE-repos from the target repo of an upgrade or migration takes away any manual tinkering of distribution repositories.
+
+**Intended supported scenarios**
+```
+Leap -> Leap n+1, Leap -> SLES, Leap -> Tumbleweed, Leap -> Slowroll
+Leap Micro -> Leap Micro n+1, Leap Micro -> MicroOS
+Slowroll -> Tumbleweed
+```
 
 ![image](https://github.com/user-attachments/assets/6c50e5f9-630b-4ead-a182-5e940376f2bf)
 
 
+## License
+This project uses the [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0) license.
 
+## Testing
 
-# License
-This project is using [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0) license.
+Please always run the tool first with --dry-run to get an overall idea of what the tool would do to your system.
+I highly recommend testing the tool in a virtual machine or container via e.g. distrobox.
 
-# Testing
+### Execution on a regular system such as Leap, Tumbleweed, Slowroll
 
-Please always run the tool first with --dry-run to get an overall idea about what the tool would do to your system.
-I highly recommend testing tool in a virtual machine or container via e.g. distrobox.
+```
+$ sudo zypper in migration-tool
+$ migration-tool --dry-run
+$ sudo migration-tool
+```
 
+### Execution on Immutable systems such as Leap Micro
 
+```
+$ sudo transactional-update shell
+$ sudo zypper in migration-tool
+$ migration-tool --dry-run
+$ sudo migration-tool
+```
 
-# Testing migration from Leap Micro
-git clone git@github.com:openSUSE/migration-tool.git
-cd migration-tool
-distrobox create --image registry.opensuse.org/opensuse/leap-micro/6.0/toolbox --name micro60
-distrobox enter micro60
-zypper in bc jq curl dialog sed gawk
-./migration-tool.sh --dry-run
-sudo ./migration-tool.sh
+## Upgrading to pre releases such as Alpha, Beta
 
-# Migration from Leap
-git clone git@github.com:openSUSE/migration-tool.git
-cd migration-tool
-distrobox create --image opensuse/leap:15.5 --name leap155
-distrobox enter leap155
-sudo zypper in bc jq curl dialog sed gawk
-./migration-tool.sh --dry-run
-sudo ./migration-tool.sh
+The --pre-release argument does the trick.
+We want to ensure that nobody accidentally upgrades their system to e.g. Alpha version of an upcoming release.
 
-# Migration / Upgrade to a pre-release e.g Leap 16.0 Alpha
+```
 ./migration-tool.sh --pre-release --dry-run
 sudo ./migration-tool.sh --pre-release
+```
+
+### Alternatively with git/distrobox (recommended for development)
+
+Leap Micro migration can be easily developed/tested on a toolbox image. 
+Just be aware that the toolbox container won't be immutable inside, so no need for transactional-update here.
+
+Please be aware that in such a container environment there could be an issue with updating bind-mounted files such as [/etc/hostname](https://bugzilla.opensuse.org/show_bug.cgi?id=1233982).
+```
+$ git clone git@github.com:openSUSE/migration-tool.git
+$ cd migration-tool
+$ distrobox create --image registry.opensuse.org/opensuse/leap-micro/6.0/toolbox --name micro60
+$ distrobox enter micro60
+$ zypper in bc jq curl dialog sed gawk
+$ ./migration-tool.sh --dry-run
+$ sudo ./migration-tool.sh
+```
+
+```
+$ git clone git@github.com:openSUSE/migration-tool.git
+$ cd migration-tool
+$ distrobox create --image opensuse/leap:15.5 --name leap155
+$ distrobox enter leap155
+$ sudo zypper in bc jq curl dialog sed gawk
+$ ./migration-tool.sh --dry-run
+$ sudo ./migration-tool.sh
+```
