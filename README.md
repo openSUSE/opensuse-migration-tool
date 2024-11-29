@@ -73,7 +73,7 @@ Just be aware that the toolbox container won't be immutable inside, so no need f
 
 Please be aware that in such a container environment there could be an issue with updating bind-mounted files such as [/etc/hostname](https://bugzilla.opensuse.org/show_bug.cgi?id=1233982).
 ```
-$ git clone git@github.com:openSUSE/opensuse-migration-tool.git
+$ git clone https://github.com/openSUSE/opensuse-migration-tool.git
 $ cd opensuse-migration-tool
 $ distrobox create --image registry.opensuse.org/opensuse/leap-micro/6.0/toolbox --name micro60
 $ distrobox enter micro60
@@ -83,7 +83,7 @@ $ sudo ./opensuse-migration-tool
 ```
 
 ```
-$ git clone git@github.com:openSUSE/opensuse-migration-tool.git
+$ git clone https://github.com/openSUSE/opensuse-migration-tool.git
 $ cd opensuse-migration-tool
 $ distrobox create --image opensuse/leap:15.5 --name leap155
 $ distrobox enter leap155
