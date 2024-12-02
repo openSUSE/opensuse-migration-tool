@@ -91,6 +91,7 @@ $ sudo zypper in bc jq curl dialog sed gawk
 $ ./opensuse-migration-tool --dry-run
 $ sudo ./opensuse-migration-tool
 ```
+
 ## Documentation for a manual migration
 
 These are wiki that describe the manual upgrade process with zypper dup
@@ -100,3 +101,31 @@ https://en.opensuse.org/SDB:System_upgrade
 https://en.opensuse.org/SDB:How_to_migrate_to_SLE
 
 https://en.opensuse.org/SDB:System_upgrade_to_LeapMicro_6.0
+
+### Packaging
+```
+$ osc bco Base:System opensuse-migration-tool # fork Package from Base:System
+$ cd Base:System/opensuse-migration-tool
+$ osc service runall
+$ osc addremove
+$ vim *.changes # review changelog, deduplicate lines from git history etc.
+$ osc build # ensure that changes build locally
+$ osc commit
+$ osc sr # submit changes to the Base:System
+```
+**Maintainer typically forwards submission from devel project to openSUSE:Factory on accept.**
+
+If this is not the case you can submit it manually.
+
+```
+$ osc sr Base:System opensuse-migration-tool openSUSE:Factory
+```
+
+Aside from Factory we want to ensure that supported Leap Micro and Leap releases get the update too.
+**Once changes are accepted in openUSSE:Factory do following.**
+
+```
+$ osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:Micro:6.1
+$ osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:16.0
+$ osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:15.6:Update
+```
