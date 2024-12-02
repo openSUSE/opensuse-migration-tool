@@ -149,7 +149,7 @@ download.opensuse.org-oss.repo download.opensuse.org-non-oss.repo download.opens
 repo-openh264.repo openSUSE-*-0.repo repo-main.repo $TMP_REPO_NAME.repo; do
   if [ -f /etc/zypp/repos.d/$repo_file ]; then
     echo "Storing old copy as /etc/zypp/repos.d/$repo_file.rpmsave"
-    $DRYRUN  /etc/zypp/repos.d/$repo_file /etc/zypp/repos.d/$repo_file.rpmsave
+    $DRYRUN mv /etc/zypp/repos.d/$repo_file /etc/zypp/repos.d/$repo_file.rpmsave
   fi
 done
 # regexpes
@@ -166,7 +166,7 @@ for file in /etc/zypp/services.d/openSUSE_*.service; do
     service_file=$(basename $file)
     if [ -f /etc/zypp/services.d/$service_file ]; then
         echo "Storing old copy as /etc/zypp/repos.d/$service_file.rpmsave"
-        mv /etc/zypp/services.d/$service_file /etc/zypp/services.d/$service_file.rpmsave
+        $DRYRUN mv /etc/zypp/services.d/$service_file /etc/zypp/services.d/$service_file.rpmsave
     fi
 done
 }
