@@ -91,6 +91,15 @@ function populate_options() {
         fi
     done <<<"$versions"
 }
+
+# Elevated permissions check unless DRYRUN is set
+if [ -z "${DRYRUN:-}" ]; then
+    if [ "$EUID" -ne 0 ]; then
+        echo "This script requires root privileges if --dry-run is not set"
+        exec sudo "$0" "$@"
+    fi
+fi
+
 # System-specific options
 if [[ "$NAME" == "openSUSE Leap Micro" ]]; then
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="MicroOS"
