@@ -92,17 +92,16 @@ function populate_options() {
     done <<<"$versions"
 }
 
-mount | head -1 | grep rw 2>&1 > /dev/null || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
-
 # Elevated permissions check unless DRYRUN is set
 if [ -z "${DRYRUN:-}" ]; then
     if [ "$EUID" -ne 0 ]; then
         exec sudo "$0" "$@"
     fi
+
+	# Requires elevated permissions or test will always fail
+	test -w / || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
 fi
 
-# Requires elevated permissions or test will always fail
-test -w / || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
 
 # System-specific options
 if [[ "$NAME" == "openSUSE Leap Micro" ]]; then
