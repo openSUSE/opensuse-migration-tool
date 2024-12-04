@@ -95,7 +95,6 @@ function populate_options() {
 # Elevated permissions check unless DRYRUN is set
 if [ -z "${DRYRUN:-}" ]; then
     if [ "$EUID" -ne 0 ]; then
-        echo "This script requires root privileges if --dry-run is not set"
         exec sudo "$0" "$@"
     fi
 fi
