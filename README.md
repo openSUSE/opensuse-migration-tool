@@ -3,6 +3,7 @@
 The tool was created during [Hackweek 24](https://hackweek.opensuse.org/24/projects/new-migration-tool-for-leap).
 
 The goal is to simplify upgrades and cross-distribution migrations within openSUSE distributions.
+
 It also supports migration from openSUSE Leap to SUSE Linux Enterprise.
 
 **The tool is still experimental and is not expected to be used in production until we have a proper test suite.**
