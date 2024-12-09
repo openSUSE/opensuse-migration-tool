@@ -5,7 +5,9 @@ The tool was created during [Hackweek 24](https://hackweek.opensuse.org/24/proje
 The goal is to simplify upgrades and cross-distribution upgrades within openSUSE distributions.
 It also supports migration from openSUSE Leap to SUSE Linux Enterprise.
 
-The tool is still experimental and is not expected to be used in production until we have a proper test suite.
+**The tool is still experimental and is not expected to be used in production until we have a proper test suite.**
+
+![image](https://github.com/user-attachments/assets/6c50e5f9-630b-4ead-a182-5e940376f2bf)
 
 The tool gets information about point releases from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json) 
 and also utilizes [openSUSE-repos](https://github.com/openSUSE/openSUSE-repos) for a cross distribution migration.
@@ -16,9 +18,17 @@ Installing openSUSE-repos from the target repo of an upgrade or migration takes 
 Leap -> Leap n+1, Leap -> SLES, Leap -> Tumbleweed, Leap -> Slowroll
 Leap Micro -> Leap Micro n+1, Leap Micro -> MicroOS
 Slowroll -> Tumbleweed
+Tumbleweed -> Slowroll
 ```
 
-![image](https://github.com/user-attachments/assets/6c50e5f9-630b-4ead-a182-5e940376f2bf)
+**Known unsupported scenarios**
+
+Migration from Tumbleweed (rolling) to any point release is not possible as it's effectively a downgrade.
+Migration from non-immutable to immutable is generally unsupported and not recommended. 
+So no option for Tumbleweed -> MicroOS either.
+For such unsupported cases please do a clean install.
+
+
 
 
 ## License
