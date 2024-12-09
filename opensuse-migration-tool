@@ -157,7 +157,7 @@ done
 # Display dialog and get choice
 CHOICE=$(dialog --clear \
     --title "[EXPERIMENTAL] System Migration - NOT FOR PRODUCTION" \
-    --menu "Select the migration target:" \
+    --menu "Select the migration target from $NAME:" \
     20 60 10 \
     "${DIALOG_ITEMS[@]}" \
     2>&1 >/dev/tty) || exit
