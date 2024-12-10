@@ -39,7 +39,7 @@ shadow_color = (BLACK,BLACK,ON)
 dialog_color = (BLACK,WHITE,OFF)
 
 # Dialog box title color
-title_color = (YELLOW,WHITE,ON)
+title_color = (BLACK,WHITE,ON)
 
 # Dialog box border color
 border_color = (WHITE,WHITE,ON)
@@ -57,7 +57,7 @@ button_key_active_color = button_active_color
 button_key_inactive_color = (RED,WHITE,OFF)
 
 # Active button label color
-button_label_active_color = (YELLOW,GREEN,ON)
+button_label_active_color = (WHITE,GREEN,ON)
 
 # Inactive button label color
 button_label_inactive_color = (BLACK,WHITE,ON)
