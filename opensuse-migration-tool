@@ -20,11 +20,14 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Set nice green instead of default blue
-DIALOGRC="/usr/share/opensuse-migration-tool/dialogrc"
-if [ -f "$SCRIPT_DIR/dialogrc" ]; then
-	DIALOGRC="$SCRIPT_DIR/dialogrc"
+
+if [[ $COLORTERM =~ ^(truecolor|24bit)$ ]]; then
+	DIALOGRC="/usr/share/opensuse-migration-tool/dialogrc"
+	if [ -f "$SCRIPT_DIR/dialogrc" ]; then
+		DIALOGRC="$SCRIPT_DIR/dialogrc"
+	fi
+	export DIALOGRC
 fi
-export DIALOGRC
 
 # Ensure required tools are installed
 REQUIRED_TOOLS=("bc" "jq" "curl" "dialog" "sed" "gawk")
