@@ -54,7 +54,7 @@ button_inactive_color = dialog_color
 button_key_active_color = button_active_color
 
 # Inactive button key color
-button_key_inactive_color = (RED,WHITE,OFF)
+button_key_inactive_color = (BLACK,WHITE,OFF)
 
 # Active button label color
 button_label_active_color = (WHITE,GREEN,ON)
@@ -102,7 +102,7 @@ tag_selected_color = button_label_active_color
 tag_key_color = button_key_inactive_color
 
 # Selected tag key color
-tag_key_selected_color = (RED,GREEN,ON)
+tag_key_selected_color = (WHITE,GREEN,ON)
 
 # Check box color
 check_color = dialog_color
