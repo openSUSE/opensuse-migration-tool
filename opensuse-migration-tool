@@ -102,6 +102,28 @@ function populate_options() {
     done <<<"$versions"
 }
 
+# Required x86_64-v2 flags
+#required_v2_flags=("cx16" "sse4_1" "sse4_2" "popcnt" "movbe" "xsave")
+required_v2_flags=("cx16" "sse4_1" "sse4_2" "popcnt" "movbe" "xsave")
+
+# Required x86_64-v3 flags
+#required_v3_flags=("cx16" "sse4_1" "sse4_2" "popcnt" "movbe" "xsave" "avx" "avx2" "bmi1" "bmi2" "fma" "abm")
+
+# CPU flags from /proc/cpuinfo
+cpu_flags=$(grep -m1 "^flags" /proc/cpuinfo | awk '{for (i=2; i<=NF; i++) print $i}')
+
+# Function to check if all required flags are present
+function check_x86_64_v2_support() {
+    for flag in "${required_v2_flags[@]}"; do
+        if ! grep -qw "$flag" <<< "$cpu_flags"; then
+            echo "CPU does not support x86_64-v2 (missing flag: $flag)"
+            return 1
+        fi
+    done
+    echo "CPU supports x86_64-v2"
+    return 0
+}
+
 # Elevated permissions check unless DRYRUN is set
 if [ -z "${DRYRUN:-}" ]; then
     if [ "$EUID" -ne 0 ]; then
@@ -146,7 +168,7 @@ else
     --title "[EXPERIMENTAL] System Migration - NOT FOR PRODUCTION" \
 	--msgbox "\nMigration from $NAME is currently not supported.\n\nPlease report issue at https://github.com/openSUSE/opensuse-migration-tool" \
     10 60
-    exit 1
+    reset; exit 1;
 fi
 
 # Display migration options
@@ -155,7 +177,7 @@ if [[ ${#MIGRATION_OPTIONS[@]} -eq 0 ]]; then
     --title "[EXPERIMENTAL] System Migration - NOT FOR PRODUCTION" \
 	--msgbox "\nNo migration options available from $NAME.\n\nPlease report issue at https://github.com/openSUSE/opensuse-migration-tool." \
     10 60
-    exit 1
+    reset; exit 1
     echo "."
 
 fi
@@ -235,7 +257,7 @@ if [[ -n $CHOICE ]]; then
                         --backtitle "SCC - Registration code" \
                         --title "Operation Cancelled" \
                         --msgbox "You have cancelled the registration process." 10 40
-                    exit 1
+                    reset; exit 1
                 fi
 
                 {
@@ -372,14 +394,23 @@ EOL
         *"openSUSE Leap"*)
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
             TARGET_VER=`echo ${MIGRATION_OPTIONS[$CHOICE]} | awk '{ print $NF }'`
+            if [ "$ARCH" == "x86_64" ] && [[ ${TARGET_VER%.*} -ge 16 ]] && ! check_x86_64_v2_support; then
+                #echo "Unsupported CPU for openSUSE Leap $TARGET_VER"
+                dialog --clear \
+                    --title "System Migration - Unsupported architecture" \
+	--msgbox "\n${MIGRATION_OPTIONS[$CHOICE]} does not support your CPU architecture. The minimum baseline is x86_64-v2.\n\nSee https://en.opensuse.org/openSUSE:X86-64-Architecture-Levels" \
+    10 60
+    reset; exit 1
+            fi
+                
             $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap/$TARGET_VER/repo/oss/repodata/ $TMP_REPO_NAME
             $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
 
-            $DRYRUN zypper --releasever $TARGET_VER dup -y --force-resolution --allow-vendor-change --download in-advance
+            $DRYRUN zypper --releasever $TARGET_VER dup -y --force-resolution --allow-vendor-change --download-in-advance
             if [ $? -ne 0 ]; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper --releasever $TARGET_VER dup --force-resolution --allow-vendor-change --download in-advance
+                $DRYRUN zypper --releasever $TARGET_VER dup --force-resolution --allow-vendor-change --download-in-advance
             fi
             ;;
         *"MicroOS"*)
