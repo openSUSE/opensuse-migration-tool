@@ -8,7 +8,8 @@ It also supports migration from openSUSE Leap to SUSE Linux Enterprise.
 
 **The tool is still experimental and is not expected to be used in production until we have a proper test suite.**
 
-![image](https://github.com/user-attachments/assets/6c50e5f9-630b-4ead-a182-5e940376f2bf)
+![image](https://github.com/user-attachments/assets/5eb2e5ee-ce07-4319-a477-6e66b27f339b)
+
 
 The tool gets information about point releases from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json) 
 and also utilizes [openSUSE-repos](https://github.com/openSUSE/openSUSE-repos) for a cross distribution migration.
