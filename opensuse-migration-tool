@@ -403,7 +403,7 @@ EOL
     reset; exit 1
             fi
                 
-            $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap/$TARGET_VER/repo/oss/repodata/ $TMP_REPO_NAME
+            $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap/$TARGET_VER/repo/oss $TMP_REPO_NAME
             $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
