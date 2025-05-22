@@ -61,23 +61,6 @@ $ sudo opensuse-migration-tool
 $ exit && reboot # into new snapshot
 ```
 
-### Upgrading to pre-releases such as Alpha, Beta
-
-By default the tool with **not show up** Alpha, Beta, RC releases of point releases as viable targets for upgrade/migration.
-E.g. Leap Micro 6.1 Beta or Leap 16.9 Alpha.
-
-This is on purpose. We want to ensure that nobody accidentally upgrades their system to e.g. Alpha version of an upcoming release.
-
-The --pre-release argument does the trick, then we'll fetch information from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json) about all available releases which are not EOL.
-Default behavior is to fetch only releases with state "Stable" which means released/supported.
-
-
-```
-./opensuse-migration-tool --pre-release --dry-run
-sudo ./opensuse-migration-tool --pre-release
-
-```
-
 ### Alternatively with git/distrobox (recommended for development)
 
 Leap Micro migration can be easily developed/tested on a toolbox image. 
