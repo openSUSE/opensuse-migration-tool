@@ -19,8 +19,10 @@
 # For accessing files from git checkout
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-# Set nice green instead of default blue
 
+trap help_rollback INT
+
+# Set nice green instead of default blue
 if [[ $COLORTERM =~ ^(truecolor|24bit)$ ]]; then
 	DIALOGRC="/usr/share/opensuse-migration-tool/dialogrc"
 	if [ -f "$SCRIPT_DIR/dialogrc" ]; then
@@ -29,15 +31,16 @@ if [[ $COLORTERM =~ ^(truecolor|24bit)$ ]]; then
 	export DIALOGRC
 fi
 
-# Ensure required tools are installed
-REQUIRED_TOOLS=("bc" "jq" "curl" "dialog" "sed" "gawk")
-for tool in "${REQUIRED_TOOLS[@]}"; do
-    if ! command -v "$tool" &>/dev/null; then
-        echo "$tool is required but not installed."
+# Ensure required packages are installed
+REQUIRED_TOOLS=("bc" "jq" "curl" "dialog" "gawk" "openSUSE-repos")
+for pkg in "${REQUIRED_TOOLS[@]}"; do
+    if ! rpm -q --whatprovides "$pkg" &>/dev/null; then
+        echo "Package providing '$pkg' is required but not installed."
         echo "Please run: sudo zypper in ${REQUIRED_TOOLS[*]}"
         exit 1
     fi
 done
+
 # Ensure Bash version is 4.0+
 if ((BASH_VERSINFO[0] < 4)); then
     echo "This script requires Bash 4.0 or higher." >&2
@@ -50,33 +53,36 @@ if [[ ! -f /etc/os-release ]]; then
 fi
 # Source OS release info
 source /etc/os-release
-ARCH=$(uname -i) # x86_64 XXX: check for other arches
+ARCH=$(uname -m) # x86_64 XXX: check for other arches
 
 # Fetch distribution data from API
 API_URL="https://get.opensuse.org/api/v0/distributions.json"
 API_DATA=$(curl -s "$API_URL")
+
+if ! echo "$API_DATA" | jq empty 2>/dev/null; then
+    echo "Failed to parse JSON from API"
+    exit 3
+fi
+
 if [ $? != 0 ]; then
     echo "Network error: Unable to fetch release data from https://get.opensuse.org/api/v0/distributions.json"
     echo "Ensure that you have working network connectivity and get.opensuse.org is accessible."
     exit 3
 fi
 DRYRUN=""
-PRERELEASE=""
 TMP_REPO_NAME="tmp-migration-tool-repo" # tmp repo to get sles-release or openSUSE-repos-*
 # Initialize MIGRATION_OPTIONS as an empty associative array
 declare -A MIGRATION_OPTIONS=()
 CURRENT_INDEX=1
 # Parse command-line arguments
 function print_help() {
-    echo "Usage: opensuse-migration-tool [--pre-release] [--dry-run] [--help]"
-    echo "  --pre-release  Include pre-release versions in the migration options."
+    echo "Usage: opensuse-migration-tool [--dry-run] [--help]"
     echo "  --dry-run      Show commands without executing them."
     echo "  --help         Show this help message and exit."
     exit 0
 }
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --pre-release) PRERELEASE="YES"; shift ;;
         --dry-run) DRYRUN="echo Would execute: "; shift ;;
         --help) print_help ;;
         *) echo "Unknown option: $1"; exit 1 ;;
@@ -86,7 +92,8 @@ done
 function fetch_versions() {
     local filter="$1"
     local key="$2"
-    jq -r ".${key}[] | select(${filter}) | .version" <<<"$API_DATA"
+    # 15.6 Stable, 16.0 Beta
+    jq -r ".${key}[] | select(${filter}) | \"\(.version)\t\(.state)\"" <<<"$API_DATA"
 }
 function populate_options() {
     local key="$1"
@@ -94,12 +101,35 @@ function populate_options() {
     local filter="$3"
     local versions
     versions=$(fetch_versions "$filter" "$key")
-    while IFS= read -r version; do
+    while IFS=$'\t' read -r version state; do
         if (( $(bc <<<"$current_version < $version") )); then
-            MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE $key $version"
+            MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE $key $version $state"
             ((CURRENT_INDEX++))
         fi
     done <<<"$versions"
+}
+
+function make_snapshot() {
+    if [ -z "${DRYRUN:-}" ] && [ -f "/usr/bin/snapper" ]; then
+        [ "$(stat -f -c %T /)" = "btrfs" ] && sudo snapper create --description "Before opensuse-migration-tool" || echo "Warning: Non-btrfs root. Skipping snapshot."
+    fi
+}
+
+function help_rollback() {
+
+    local msg
+    msg="You have cancelled the registration process."
+
+    if [ -z "$DRYRUN" ] && [ -f "/usr/bin/snapper" ]; then
+        SNAPSHOT=$(sudo snapper list | grep "Before opensuse-migration-tool" | tail -1 | awk '{ print $1 }')
+        msg+="You can rollback to the state before migration by running 'snapper rollback $SNAPSHOT'."
+    fi
+
+    dialog --clear \
+    --backtitle "SCC - Registration code" \
+    --title "Operation Cancelled" \
+    --msgbox "$msg" 10 40
+    exit 1
 }
 
 # Required x86_64-v2 flags
@@ -134,28 +164,19 @@ if [ -z "${DRYRUN:-}" ]; then
 	test -w / || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
 fi
 
-
 # System-specific options
 if [[ "$NAME" == "openSUSE Leap Micro" ]]; then
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="MicroOS"
     ((CURRENT_INDEX++))
-    if [[ $PRERELEASE ]]; then
-        populate_options "LeapMicro" "$VERSION" '.state!="EOL"'
-    else
-        populate_options "LeapMicro" "$VERSION" '.state=="Stable"'
-    fi
+    populate_options "LeapMicro" "$VERSION" '.state!="EOL"'
 elif [[ "$NAME" == "openSUSE Leap" ]]; then
-    MIGRATION_OPTIONS["$CURRENT_INDEX"]="SUSE Linux Enterprise $(sed 's/\./ SP/' <<<"$VERSION")"
+    MIGRATION_OPTIONS["$CURRENT_INDEX"]="SUSE Linux Enterprise ${VERSION/./ SP}"
     ((CURRENT_INDEX++))
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE Tumbleweed"
     ((CURRENT_INDEX++))
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE Tumbleweed-Slowroll"
     ((CURRENT_INDEX++))
-    if [[ $PRERELEASE ]]; then
-        populate_options "Leap" "$VERSION" '.state!="EOL"'
-    else
-        populate_options "Leap" "$VERSION" '.state=="Stable"'
-    fi
+    populate_options "Leap" "$VERSION" '.state!="EOL"'
 elif [[ "$NAME" == "openSUSE Tumbleweed" ]]; then
    MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE Tumbleweed-Slowroll"
    ((CURRENT_INDEX++))
@@ -178,7 +199,6 @@ if [[ ${#MIGRATION_OPTIONS[@]} -eq 0 ]]; then
 	--msgbox "\nNo migration options available from $NAME.\n\nPlease report issue at https://github.com/openSUSE/opensuse-migration-tool." \
     10 60
     reset; exit 1
-    echo "."
 
 fi
 # Prepare dialog items
@@ -194,48 +214,51 @@ CHOICE=$(dialog --clear \
     "${DIALOG_ITEMS[@]}" \
     2>&1 >/dev/tty) || exit
 
-rpmsave_repo() {
-### XXX: This could go away if we install openSUSE-repos before migration
-### It does the same thing
-for repo_file in \
-repo-backports-debug-update.repo repo-oss.repo repo-backports-update.repo \
-repo-sle-debug-update.repo repo-debug-non-oss.repo repo-sle-update.repo \
-repo-debug.repo repo-source.repo repo-debug-update.repo repo-update.repo \
-repo-debug-update-non-oss.repo repo-update-non-oss.repo repo-non-oss.repo \
-download.opensuse.org-oss.repo download.opensuse.org-non-oss.repo download.opensuse.org-tumbleweed.repo \
-repo-openh264.repo openSUSE-*-0.repo repo-main.repo $TMP_REPO_NAME.repo; do
-  if [ -f /etc/zypp/repos.d/$repo_file ]; then
-    echo "Storing old copy as /etc/zypp/repos.d/$repo_file.rpmsave"
-    $DRYRUN mv /etc/zypp/repos.d/$repo_file /etc/zypp/repos.d/$repo_file.rpmsave
-  fi
-done
-# regexpes
-for file in /etc/zypp/repos.d/openSUSE-*.repo; do
-    repo_file=$(basename $file)
-    if [ -f /etc/zypp/repos.d/$repo_file ]; then
-        echo "Storing old copy as /etc/zypp/repos.d/$repo_file.rpmsave"
-        $DRYRUN mv /etc/zypp/repos.d/$repo_file /etc/zypp/repos.d/$repo_file.rpmsave
+
+# Ideally let's disabled all non-RIS managed repositories (openSUSE, NVIDIA)
+# whitelist trusted 3rd party repos
+disable_3rdparty_repos() {
+    declare -a disabled_repos=()
+
+    # Skip first 5 decorative lines
+    for repo_alias in $(zypper lr -E | tail -n +5 | awk '{ print $3 }'); do
+        # Keep known RIS managed repositories
+        if [[ "$repo_alias" == "openSUSE:"* ]] || \
+           [[ "$repo_alias" == "NVIDIA:"* ]] || \
+           [[ "$repo_alias" == "google-chrome" ]]; then
+           continue
+        else
+        disabled_repos+=("$repo_alias")
+        fi
+    done
+
+    if [ ${#disabled_repos[@]} -ne 0 ]; then
+        local msg
+        msg=$(printf "%s\n" "${disabled_repos[@]}")
+
+        dialog --clear \
+        --backtitle "Disabling non-distribution repositories" \
+        --title "Following repositories will be disabled" \
+        --msgbox "$msg" 10 40
+
+
+        for repository in "${disabled_repos[@]}"; do
+            $DRYRUN zypper modifyrepo -d "$repository"
+        done
     fi
-done
-# Ensure to drop any SCC generated service/repo files for Leap
-# e.g. /etc/zypp/services.d/openSUSE_Leap_15.6_x86_64.service
-for file in /etc/zypp/services.d/openSUSE_*.service; do
-    service_file=$(basename $file)
-    if [ -f /etc/zypp/services.d/$service_file ]; then
-        echo "Storing old copy as /etc/zypp/repos.d/$service_file.rpmsave"
-        $DRYRUN mv /etc/zypp/services.d/$service_file /etc/zypp/services.d/$service_file.rpmsave
-    fi
-done
 }
+make_snapshot # Make snapshot only after user selected migration target
+disable_3rdparty_repos
+
 # Clear the screen and handle the user choice
 clear
 if [[ -n $CHOICE ]]; then
-    echo "Selected option: ${MIGRATION_OPTIONS[$CHOICE]}"
-    case "${MIGRATION_OPTIONS[$CHOICE]}" in
+    echo "Selected option: ${MIGRATION_OPTIONS["$CHOICE"]}"
+    case "${MIGRATION_OPTIONS["$CHOICE"]}" in
         *"SUSE Linux Enterprise"*|"SLE")
-            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
+            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS["$CHOICE"]}"
 
-            SP=$(sed 's/\./-SP/' <<<"$VERSION") # VERSION from /etc/os-release 15.6 -> 15-SP6
+            SP=${VERSION/./-SP} # VERSION from /etc/os-release 15.6 -> 15-SP6
 
             while true; do
                 # Capture output and return code
@@ -282,9 +305,8 @@ if [[ -n $CHOICE ]]; then
             #$DRYRUN zypper in --force-resolution -y suseconnect-ng
             #$DRYRUN zypper in --force-resolution -y unified-installer-release SLE_BCI-release # sles-release is not in BCI
 
-            MAJVER=$(echo $VERSION| awk -F"." '{ print $1 }') # 15
-            MINVER=$(echo $VERSION| awk -F"." '{ print $2 }') # 6
-            echo $REGCODE
+            MAJVER=$(echo "$VERSION"| awk -F"." '{ print $1 }') # 15
+            MINVER=$(echo "$VERSION"| awk -F"." '{ print $2 }') # 6
             $DRYRUN zypper in -y suseconnect-ng snapper grub2-snapper-plugin
             # Backup /etc/os-release before release package removal
             echo "Backing up /etc/os-release as /etc/os-release.backup"
@@ -311,32 +333,28 @@ EOL
             fi
 
 			if [ -f  "$SCRIPT_DIR/SLES.prod" ]; then
-				$DRYRUN cp $SCRIPT_DIR/SLES.prod /etc/products.d
+				$DRYRUN cp "$SCRIPT_DIR/SLES.prod" /etc/products.d
 			else
 				$DRYRUN cp /usr/share/opensuse-migration-tool/SLES.prod /etc/products.d
 			fi
 	        $DRYRUN cp SLES.prod /etc/products.d/
             $DRYRUN rm -r /etc/products.d/baseproduct
             $DRYRUN ln -s /etc/products.d/SLES.prod /etc/products.d/baseproduct
-            if [ -z "$DRYRUN" ]; then
-                rpmsave_repo # invalidates all standard openSUSE repos
-            fi
 
-	        $DRYRUN suseconnect -e  $EMAIL -r $REGCODE 
-	        $DRYRUN SUSEConnect -p PackageHub/$VERSION/$ARCH
+	        $DRYRUN suseconnect -e  "$EMAIL" -r "$REGCODE" 
+	        $DRYRUN SUSEConnect -p PackageHub/"$VERSION"/"$ARCH"
 
             $DRYRUN zypper dup -y --force-resolution --allow-vendor-change --download in-advance
             if [ $? -ne 0 ]; then # re-run zypper dup as interactive in case of failure in non-interactive mode
                 $DRYRUN zypper dup --force-resolution --allow-vendor-change --download in-advance 
             fi
 
-
             $DRYRUN rpm -e --nodeps branding-openSUSE grub2-branding-openSUSE wallpaper-branding-openSUSE plymouth-branding-openSUSE systemd-presets-branding-openSUSE systemd-presets-branding-MicroOS
 	        $DRYRUN zypper remove -y opensuse-welcome # might not be present on text-installations
 	        $DRYRUN zypper in -y branding-SLE-15 grub2-branding-SLE wallpaper-branding-SLE-15 plymouth-branding-SLE systemd-presets-branding-SLE
             ;;
         "openSUSE Tumbleweed")
-            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
+            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS["$CHOICE"]}"
             # https://download.opensuse.org/ports/ # for other arches
             REPOURL="https://download.opensuse.org/tumbleweed/repo/oss/"
             if [ "$ARCH" != "x86_64" ]; then
@@ -345,13 +363,14 @@ EOL
                     # Let's not messup any systems and make sure this is properly implemented first
                     echo "Unsupported arch '$ARCH'."
                     echo "Please open an issue at https://github.com/openSUSE/opensuse-migration-tool/issues"
-                    echo "Make sure to add output of 'uname -i' and content of your /etc/os-release into the ticket."
+                    echo "Make sure to add output of 'uname -m' and content of your /etc/os-release into the ticket."
                     exit 1
                 fi
             fi
-            $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-            $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
-            $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
+            $DRYRUN zypper removerepo  "$REPOURL" "$TMP_REPO_NAME" # in case of prevoius failed migration
+            $DRYRUN zypper addrepo -f "$REPOURL" "$TMP_REPO_NAME"
+            $DRYRUN zypper in -y --from "$TMP_REPO_NAME" openSUSE-repos-Leap # install repos from the nextrelease
+            $DRYRUN zypper removerepo "$TMP_REPO_NAME" # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
             
             $DRYRUN zypper dup -y --force-resolution --allow-vendor-change --download in-advance
@@ -361,15 +380,15 @@ EOL
 
             ;;
         "openSUSE Tumbleweed-Slowroll")
-            $DRYRUN echo "Migrating to ${MIGRATION_OPTIONS[$CHOICE]}"
+            $DRYRUN echo "Migrating to ${MIGRATION_OPTIONS["$CHOICE"]}"
             REPOURL="https://download.opensuse.org/slowroll/repo/oss/"
             if [ "$ARCH" != "x86_64" ]; then
                 echo "Unsupported arch '$ARCH' by Slowroll."
                 exit 1
             fi
-            $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-            $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-Slowroll # install repos from the nextrelease
-            $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
+            $DRYRUN zypper addrepo -f "$REPOURL" "$TMP_REPO_NAME"
+            $DRYRUN zypper in -y --from "$TMP_REPO_NAME" openSUSE-repos-Slowroll # install repos from the nextrelease
+            $DRYRUN zypper removerepo "$TMP_REPO_NAME" # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
             
             $DRYRUN zypper dup -y --force-resolution --allow-vendor-change --download in-advance
@@ -379,42 +398,43 @@ EOL
             ;;
         *"openSUSE LeapMicro"*)
             # Has to be before Leap*
-            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
-            TARGET_VER=`echo ${MIGRATION_OPTIONS[$CHOICE]} | awk '{ print $NF }'`
-            $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap-micro/$TARGET_VER/product/repo/openSUSE-Leap-Micro-$TARGET_VER-$ARCH/ $TMP_REPO_NAME
-            $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-LeapMicro # install repos from the nextrelease
-            $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
+            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS["$CHOICE"]}"
+            # 6.0 Beta| 6.1 Stable
+            TARGET_VER=$(echo "${MIGRATION_OPTIONS["$CHOICE"]}" | awk '{ print $(NF - 1) }')
+            $DRYRUN zypper addrepo -f "https://download.opensuse.org/distribution/leap-micro/$TARGET_VER/product/repo/openSUSE-Leap-Micro-$TARGET_VER-$ARCH/" $TMP_REPO_NAME
+            $DRYRUN zypper in -y --from "$TMP_REPO_NAME" openSUSE-repos-LeapMicro # install repos from the nextrelease
+            $DRYRUN zypper removerepo "$TMP_REPO_NAME" # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
 
-            $DRYRUN zypper --releasever $TARGET_VER dup -y --force-resolution --allow-vendor-change --download in-advance
+            $DRYRUN zypper --releasever "$TARGET_VER" dup -y --force-resolution --allow-vendor-change --download in-advance
             if [ $? -ne 0 ]; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper --releasever $TARGET_VER dup --force-resolution --allow-vendor-change --download in-advance 
+                $DRYRUN zypper --releasever "$TARGET_VER" dup --force-resolution --allow-vendor-change --download in-advance 
             fi
             ;;
         *"openSUSE Leap"*)
-            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
-            TARGET_VER=`echo ${MIGRATION_OPTIONS[$CHOICE]} | awk '{ print $NF }'`
+            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS["$CHOICE"]}"
+            TARGET_VER=$(echo "${MIGRATION_OPTIONS["$CHOICE"]}" | awk '{ print $(NF - 1) }') # "16.0 Beta" | "16.0 Stable"
             if [ "$ARCH" == "x86_64" ] && [[ ${TARGET_VER%.*} -ge 16 ]] && ! check_x86_64_v2_support; then
                 #echo "Unsupported CPU for openSUSE Leap $TARGET_VER"
                 dialog --clear \
                     --title "System Migration - Unsupported architecture" \
-	--msgbox "\n${MIGRATION_OPTIONS[$CHOICE]} does not support your CPU architecture. The minimum baseline is x86_64-v2.\n\nSee https://en.opensuse.org/openSUSE:X86-64-Architecture-Levels" \
+	--msgbox "\n${MIGRATION_OPTIONS["$CHOICE"]} does not support your CPU architecture. The minimum baseline is x86_64-v2.\n\nSee https://en.opensuse.org/openSUSE:X86-64-Architecture-Levels" \
     10 60
     reset; exit 1
             fi
                 
-            $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap/$TARGET_VER/repo/oss $TMP_REPO_NAME
+            $DRYRUN zypper addrepo -f "https://download.opensuse.org/distribution/leap/$TARGET_VER/repo/oss" "$TMP_REPO_NAME"
             $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
 
-            $DRYRUN zypper --releasever $TARGET_VER dup -y --force-resolution --allow-vendor-change --download-in-advance
+            $DRYRUN zypper --releasever "$TARGET_VER" dup -y --force-resolution --allow-vendor-change --download-in-advance
             if [ $? -ne 0 ]; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper --releasever $TARGET_VER dup --force-resolution --allow-vendor-change --download-in-advance
+                $DRYRUN zypper --releasever "$TARGET_VER" dup --force-resolution --allow-vendor-change --download-in-advance
             fi
             ;;
         *"MicroOS"*)
-            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
+            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS["$CHOICE"]}"
             # https://download.opensuse.org/ports/ # for other arches
             REPOURL="https://download.opensuse.org/tumbleweed/repo/oss/"
             if [ "$ARCH" != "x86_64" ]; then
@@ -423,13 +443,13 @@ EOL
                     # Let's not messup any systems and make sure this is properly implemented first
                     echo "Unsupported arch '$ARCH'."
                     echo "Please open an issue at https://github.com/openSUSE/opensuse-migration-tool/issues"
-                    echo "Make sure to add output of 'uname -i' and content of your /etc/os-release into the ticket."
+                    echo "Make sure to add output of 'uname -m' and content of your /etc/os-release into the ticket."
                     exit 1
                 fi
             fi
-            $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-			$DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-MicroOS # install repos from the nextrelease
-            $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
+            $DRYRUN zypper addrepo -f "$REPOURL" "$TMP_REPO_NAME"
+			$DRYRUN zypper in -y --from "$TMP_REPO_NAME" openSUSE-repos-MicroOS # install repos from the nextrelease
+            $DRYRUN zypper removerepo "$TMP_REPO_NAME" # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
             
             $DRYRUN zypper dup -y --force-resolution --allow-vendor-change --download in-advance
@@ -443,9 +463,7 @@ else
     exit 1
 fi
 
-#dialog --clear \
-#    --backtitle "[EXPERIMENTAL] Migration tool" \
-#    --title "Migration process completed" \
-#    --msgbox "\nMigration process completed.\nA reboot is recommended." 10 40
-#
-echo "Migration process completed. A reboot is recommended."
+dialog --clear \
+    --backtitle "[EXPERIMENTAL] openSUSE Migration tool" \
+    --title "Migration process completed" \
+    --msgbox "\nMigration process completed.\nA reboot is recommended." 10 40
