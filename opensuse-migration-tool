@@ -61,22 +61,19 @@ if [ $? != 0 ]; then
     exit 3
 fi
 DRYRUN=""
-PRERELEASE=""
 TMP_REPO_NAME="tmp-migration-tool-repo" # tmp repo to get sles-release or openSUSE-repos-*
 # Initialize MIGRATION_OPTIONS as an empty associative array
 declare -A MIGRATION_OPTIONS=()
 CURRENT_INDEX=1
 # Parse command-line arguments
 function print_help() {
-    echo "Usage: opensuse-migration-tool [--pre-release] [--dry-run] [--help]"
-    echo "  --pre-release  Include pre-release versions in the migration options."
+    echo "Usage: opensuse-migration-tool [--dry-run] [--help]"
     echo "  --dry-run      Show commands without executing them."
     echo "  --help         Show this help message and exit."
     exit 0
 }
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --pre-release) PRERELEASE="YES"; shift ;;
         --dry-run) DRYRUN="echo Would execute: "; shift ;;
         --help) print_help ;;
         *) echo "Unknown option: $1"; exit 1 ;;
@@ -139,11 +136,7 @@ fi
 if [[ "$NAME" == "openSUSE Leap Micro" ]]; then
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="MicroOS"
     ((CURRENT_INDEX++))
-    if [[ $PRERELEASE ]]; then
-        populate_options "LeapMicro" "$VERSION" '.state!="EOL"'
-    else
-        populate_options "LeapMicro" "$VERSION" '.state=="Stable"'
-    fi
+    populate_options "LeapMicro" "$VERSION" '.state!="EOL"'
 elif [[ "$NAME" == "openSUSE Leap" ]]; then
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="SUSE Linux Enterprise $(sed 's/\./ SP/' <<<"$VERSION")"
     ((CURRENT_INDEX++))
@@ -151,11 +144,7 @@ elif [[ "$NAME" == "openSUSE Leap" ]]; then
     ((CURRENT_INDEX++))
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE Tumbleweed-Slowroll"
     ((CURRENT_INDEX++))
-    if [[ $PRERELEASE ]]; then
-        populate_options "Leap" "$VERSION" '.state!="EOL"'
-    else
-        populate_options "Leap" "$VERSION" '.state=="Stable"'
-    fi
+    populate_options "Leap" "$VERSION" '.state!="EOL"'
 elif [[ "$NAME" == "openSUSE Tumbleweed" ]]; then
    MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE Tumbleweed-Slowroll"
    ((CURRENT_INDEX++))
