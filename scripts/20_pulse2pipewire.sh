@@ -17,7 +17,6 @@ error_exit() {
 
 # This is used to generate dynamic list of tasks
 if [[ "${1:-}" == "--check" ]]; then
-    exit 0
     if rpm -q pulseaudio &>/dev/null && zypper se -x pipewire-pulseaudio &>/dev/null; then
         exit 0
     else
