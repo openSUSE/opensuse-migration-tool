@@ -245,8 +245,57 @@ for file in /etc/zypp/services.d/openSUSE_*.service; do
     fi
 done
 }
-# Clear the screen and handle the user choice
-clear
+
+# Step: Detect and offer to disable 3rd-party repositories
+# This is the #1 reason for failed migration
+REPO_LIST=()
+
+# Known 3rd party repos with no $releasever or hardcoded version
+exceptions=("google-chrome" )
+
+while IFS="|" read -r num alias name enabled rest; do
+    alias=$(echo "$alias" | xargs)  # trim
+    name=$(echo "$name" | xargs)
+    enabled=$(echo "$enabled" | xargs)
+
+    if [[ "$enabled" == "Yes" ]] && \
+       [[ ! "$alias" =~ ^(openSUSE:|NVIDIA:) ]]; then
+        if [[ " ${exceptions[*]} " == *" $alias "* ]]; then
+            REPO_LIST+=("$alias" "$name" "off")
+        else
+            REPO_LIST+=("$alias" "$name" "on")
+        fi
+    fi
+done < <(zypper lr -E -d --uri | tail -n +3 | awk -F '|' '{print $1 "|" $2 "|" $3 "|" $4}')
+
+if [[ ${#REPO_LIST[@]} -eq 0 ]]; then
+    echo "[INFO] No third-party repositories to disable."
+else
+    checklist_msg=$(
+cat <<EOF
+The following enabled repositories are not recognized.
+It is strongly recommended to disable them before proceeding with the migration.
+
+Such repositories often have hardcoded URLs or may not yet offer packages
+for the target release. This can cause \`zypper dup\` to fail if a repository
+is unreachable or incompatible.
+
+You can deselect any repositories you prefer to keep enabled:
+EOF
+)
+    SELECTED_REPOS=$(dialog --clear \
+        --title "Disable Third-Party Repositories" \
+        --checklist "$checklist_msg" \
+        20 80 10 \
+        "${REPO_LIST[@]}" \
+        2>&1 >/dev/tty)
+
+    for repo in $SELECTED_REPOS; do
+        echo "[INFO] Disabling repository: $repo"
+        $DRYRUN zypper --non-interactive modifyrepo -d "$repo"
+    done
+fi
+
 if [[ -n $CHOICE ]]; then
     echo "Selected option: ${MIGRATION_OPTIONS[$CHOICE]}"
     case "${MIGRATION_OPTIONS[$CHOICE]}" in
