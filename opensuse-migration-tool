@@ -196,8 +196,6 @@ if [[ ${#MIGRATION_OPTIONS[@]} -eq 0 ]]; then
 	--msgbox "\nNo migration options available from $NAME.\n\nPlease report issue at https://github.com/openSUSE/opensuse-migration-tool." \
     10 60
     reset; exit 1
-    echo "."
-
 fi
 # Prepare dialog items
 DIALOG_ITEMS=()
@@ -358,9 +356,6 @@ if [[ -n $CHOICE ]]; then
             $DRYRUN cp /etc/os-release /etc/os-release.backup
             $DRYRUN rpm -e --nodeps openSUSE-release
             $DRYRUN rpm -e --nodeps openSUSE-repos
-             # Backup the release
-            echo "Backing up /etc/os-release as /etc/os-release.backup"
-            $DRYRUN cp /etc/os-release /etc/os-release.backup
             if [ -z "$DRYRUN" ]; then
                 cat > /etc/os-release  << EOL
 NAME="SLES" 
@@ -378,11 +373,10 @@ EOL
             fi
 
 			if [ -f  "$SCRIPT_DIR/SLES.prod" ]; then
-				$DRYRUN cp $SCRIPT_DIR/SLES.prod /etc/products.d
+				$DRYRUN cp "$SCRIPT_DIR/SLES.prod" /etc/products.d
 			else
 				$DRYRUN cp /usr/share/opensuse-migration-tool/SLES.prod /etc/products.d
 			fi
-	        $DRYRUN cp SLES.prod /etc/products.d/
             $DRYRUN rm -r /etc/products.d/baseproduct
             $DRYRUN ln -s /etc/products.d/SLES.prod /etc/products.d/baseproduct
             if [ -z "$DRYRUN" ]; then
