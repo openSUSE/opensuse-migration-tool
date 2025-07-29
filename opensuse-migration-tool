@@ -19,6 +19,30 @@
 # For accessing files from git checkout
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
+# Script dir for git-based execution
+POST_MIGRATION_DIR="$SCRIPT_DIR/scripts"
+
+# Migration scripts naming convention:
+# Prefix numbers define execution order. Inspired by /etc/grub.d
+# Use multiples of 5 or 10 for flexibility, e.g.:
+#   05_ for very core low-level tasks,
+#   20_ for pulse2pipewire migration,
+#   30_ and above for desktop environment or user session tweaks.
+#
+# Example:
+#   20_pulse2pipewire.sh  # Switch PulseAudio to PipeWire early but after core system tasks.
+
+# Fallback to installed location if not found
+if [[ ! -d "$POST_MIGRATION_DIR" ]]; then
+    POST_MIGRATION_DIR="/usr/share/opensuse-migration-tool/scripts"
+fi
+
+# Warn if not found at all
+if [[ ! -d "$POST_MIGRATION_DIR" ]]; then
+    echo "[ERROR] Post-migration script directory not found: $POST_MIGRATION_DIR"
+    exit 1
+fi
+
 # Set nice green instead of default blue
 
 if [[ $COLORTERM =~ ^(truecolor|24bit)$ ]]; then
@@ -30,7 +54,8 @@ if [[ $COLORTERM =~ ^(truecolor|24bit)$ ]]; then
 fi
 
 # Ensure required tools are installed
-REQUIRED_TOOLS=("bc" "jq" "curl" "dialog" "sed" "gawk")
+# Double check for zypper in case we're on dnf-based system
+REQUIRED_TOOLS=("bc" "jq" "curl" "dialog" "sed" "gawk" "zypper")
 for tool in "${REQUIRED_TOOLS[@]}"; do
     if ! command -v "$tool" &>/dev/null; then
         echo "$tool is required but not installed."
@@ -64,12 +89,16 @@ DRYRUN=""
 TMP_REPO_NAME="tmp-migration-tool-repo" # tmp repo to get sles-release or openSUSE-repos-*
 # Initialize MIGRATION_OPTIONS as an empty associative array
 declare -A MIGRATION_OPTIONS=()
+declare -A AVAILABLE_TASKS=()
+
 CURRENT_INDEX=1
 # Parse command-line arguments
 function print_help() {
     echo "Usage: opensuse-migration-tool [--dry-run] [--help]"
     echo "  --dry-run      Show commands without executing them."
     echo "  --help         Show this help message and exit."
+    echo
+    echo "Report issues: https://github.com/openSUSE/opensuse-migration-tool"
     exit 0
 }
 while [[ $# -gt 0 ]]; do
@@ -431,6 +460,43 @@ else
     echo "No option selected. Exiting."
     exit 1
 fi
+
+# Migration scripts, keep the desc short
+
+for script in "$POST_MIGRATION_DIR"/*.sh; do
+    name=$(basename "$script" .sh)
+    if "$script" --check; then
+        case "$name" in
+            "20_pulse2pipewire") desc="Switch to PipeWire" ;;
+            *)                   desc="Run $name" ;;
+        esac
+        AVAILABLE_TASKS["$name"]="$desc"
+    fi
+done
+
+if [[ ${#AVAILABLE_TASKS[@]} -gt 0 ]]; then
+    CHECKLIST_ITEMS=()
+    for key in "${!AVAILABLE_TASKS[@]}"; do
+        CHECKLIST_ITEMS+=("$key" "${AVAILABLE_TASKS[$key]}" "on")
+    done
+    SELECTED_TASKS=$(dialog --clear \
+        --title "Post-Migration Optional Tasks" \
+        --checklist "Select tasks to run after system upgrade:" \
+        20 70 10 \
+        "${CHECKLIST_ITEMS[@]}" \
+        2>&1 >/dev/tty)
+else
+    echo "[INFO] No available post-migration tasks."
+fi
+
+# Basic ordering of execution
+# We use prefixes and simple string comparison e.g. scripts/05_script.sh ...
+sorted_selected_tasks=$(echo $SELECTED_TASKS | tr ' ' '\n' | sort)
+for task in $sorted_selected_tasks; do
+    SCRIPT="$POST_MIGRATION_DIR/$task.sh"
+    echo "[INFO] Running post-migration task: $task"
+    $DRYRUN $SCRIPT
+done
 
 #dialog --clear \
 #    --backtitle "[EXPERIMENTAL] Migration tool" \
