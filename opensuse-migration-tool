@@ -510,7 +510,10 @@ for script in "$POST_MIGRATION_DIR"/*.sh; do
     name=$(basename "$script" .sh)
     if "$script" --check; then
         case "$name" in
-            "20_pulse2pipewire") desc="Switch to PipeWire" ;;
+            "10_keepapparmor") desc="Keep AppArmor (SELinux is new default)" ;;
+            "10_keepselinux") desc="Switch to SELinux (new Default)" ;;
+            "20_pulse2pipewire") desc="Switch to PipeWire (new Default)" ;;
+            "20_ia32") desc="Allow 32bit binary execution (Steam)" ;;
             *)                   desc="Run $name" ;;
         esac
         AVAILABLE_TASKS["$name"]="$desc"
