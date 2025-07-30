@@ -1,145 +1,168 @@
-# openSUSE migration tool
+# 🛍️ openSUSE Migration Tool
 
-The tool was created during [Hackweek 24](https://hackweek.opensuse.org/24/projects/new-migration-tool-for-leap).
+&#x20;  &#x20;
 
-The goal is to simplify upgrades and cross-distribution migrations within openSUSE distributions.
+A command-line tool to **simplify upgrades and migrations** across openSUSE distributions — including *Leap*, *Tumbleweed*, *Slowroll*, and even migrations from **Leap to SLE**.
 
-It also supports migration from openSUSE Leap to SUSE Linux Enterprise.
+> 🗪 **Experimental** — not recommended for production use yet. Use with caution until a complete test suite is implemented.
 
-**The tool is still experimental and is not expected to be used in production until we have a proper test suite.**
-
+---
 <img width="1441" height="914" alt="image" src="https://github.com/user-attachments/assets/e3e47132-389f-4311-a077-97248f9d47fd" />
-<img width="1441" height="914" alt="image" src="https://github.com/user-attachments/assets/43a91ee4-1ef6-47e1-8eb1-20d12bd33837" />
-<img width="1441" height="914" alt="image" src="https://github.com/user-attachments/assets/834eaec2-8952-4d49-96d4-e681fa01097c" />
 
+## 🌟 Key Features
 
-The tool gets information about point releases from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json) 
-and also utilizes [openSUSE-repos](https://github.com/openSUSE/openSUSE-repos) for a cross distribution migration.
-Installing openSUSE-repos from the target repo of an upgrade or migration takes away any manual tinkering of distribution repositories.
+👉 **Upgrade to pre-releases such as Leap 16.0 Beta**
+👉 **Migration across various openSUSE distributions**
+👉 **Migration to SUSE Linux Enterprise products**
+👉 **Integrates get.opensuse.org product API + openSUSE-repos**
+👉 **Dry-run mode for safe previews**
+👉 **Support for immutable systems (Leap Micro)**
+👉 **Disabling 3rd party repos prior to migration**
 
-**Intended supported scenarios**
-```
-Leap -> Leap n+1, Leap -> SLES, Leap -> Tumbleweed, Leap -> Slowroll
-Leap Micro -> Leap Micro n+1, Leap Micro -> MicroOS
-Slowroll -> Tumbleweed
-Tumbleweed -> Slowroll
-```
+---
 
-**Known unsupported scenarios**
-
-Migration from Tumbleweed (rolling) to any point release is not possible as it's effectively a downgrade.
-Migration from non-immutable to immutable is generally unsupported and not recommended. 
-So no option for Tumbleweed -> MicroOS either.
-For such unsupported cases please do a clean install.
-
-
-
-
-## License
-This project uses the [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0) license.
-
-## Testing
-
-Please always run the tool first with --dry-run to get an overall idea of what the tool would do to your system.
-I highly recommend testing the tool in a virtual machine or container via e.g. distrobox.
-
-### Execution on a regular system such as Leap, Tumbleweed, Slowroll
+## 🔄 Supported Migration Paths
 
 ```
-$ sudo zypper in opensuse-migration-tool
-$ opensuse-migration-tool --dry-run
-$ sudo opensuse-migration-tool
-$ reboot
+Leap           → Leap n+1, SLES, Tumbleweed, Slowroll
+Leap Micro     → Leap Micro n+1, MicroOS
+Slowroll       → Tumbleweed
+Tumbleweed     → Slowroll
 ```
 
-### Execution on Immutable systems such as Leap Micro
+⚠️ **Unsupported or discouraged paths**:
 
+* Tumbleweed → Leap (downgrade, not supported)
+* Tumbleweed → MicroOS (immutable shift)
+* Non-immutable → Immutable (generally unsupported)
+
+---
+
+## 📜 License
+
+This project is licensed under the [Apache-2.0 License](http://www.apache.org/licenses/LICENSE-2.0). 👐
+
+---
+
+## 🧪 Quick Start: Testing the Tool
+
+> Always use `--dry-run` first to preview planned changes!
+
+### 🔧 On regular systems (Leap, Tumbleweed, Slowroll)
+
+```bash
+sudo zypper in opensuse-migration-tool
+opensuse-migration-tool --dry-run
+sudo opensuse-migration-tool
+reboot
 ```
-$ sudo transactional-update shell
-# Inside the shell
-$ sudo zypper in opensuse-migration-tool
-$ opensuse-migration-tool --dry-run
-$ sudo opensuse-migration-tool
-$ exit && reboot # into new snapshot
+
+---
+
+### 💨 On immutable systems (Leap Micro)
+
+```bash
+sudo transactional-update shell
+# Inside shell:
+zypper in opensuse-migration-tool
+opensuse-migration-tool --dry-run
+sudo opensuse-migration-tool
+exit && reboot  # boot into new snapshot
 ```
 
-### Upgrading to pre-releases such as Alpha, Beta
+---
 
-By default the tool with **not show up** Alpha, Beta, RC releases of point releases as viable targets for upgrade/migration.
-E.g. Leap Micro 6.1 Beta or Leap 16.9 Alpha.
+### 🚧 Upgrading to Alpha/Beta/RC Releases
 
-This is on purpose. We want to ensure that nobody accidentally upgrades their system to e.g. Alpha version of an upcoming release.
+By default, **pre-release versions are hidden** to avoid accidental installs.
 
-The --pre-release argument does the trick, then we'll fetch information from [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json) about all available releases which are not EOL.
-Default behavior is to fetch only releases with state "Stable" which means released/supported.
+Use `--pre-release` to opt-in:
 
-
-```
+```bash
 ./opensuse-migration-tool --pre-release --dry-run
 sudo ./opensuse-migration-tool --pre-release
-
 ```
 
-### Alternatively with git/distrobox (recommended for development)
+---
 
-Leap Micro migration can be easily developed/tested on a toolbox image. 
-Just be aware that the toolbox container won't be immutable inside, so no need for transactional-update here.
+## 🐳 Development & Testing in Distrobox (Recommended)
 
-Please be aware that in such a container environment there could be an issue with updating bind-mounted files such as [/etc/hostname](https://bugzilla.opensuse.org/show_bug.cgi?id=1233982).
-```
-$ git clone https://github.com/openSUSE/opensuse-migration-tool.git
-$ cd opensuse-migration-tool
-$ distrobox create --image registry.opensuse.org/opensuse/leap-micro/6.0/toolbox --name micro60
-$ distrobox enter micro60
-$ zypper in bc jq curl dialog sed gawk
-$ ./opensuse-migration-tool --dry-run
-$ sudo ./opensuse-migration-tool
-```
+### Leap Micro inside Toolbox container
 
-```
-$ git clone https://github.com/openSUSE/opensuse-migration-tool.git
-$ cd opensuse-migration-tool
-$ distrobox create --image opensuse/leap:15.5 --name leap155
-$ distrobox enter leap155
-$ sudo zypper in bc jq curl dialog sed gawk
-$ ./opensuse-migration-tool --dry-run
-$ sudo ./opensuse-migration-tool
+```bash
+git clone https://github.com/openSUSE/opensuse-migration-tool.git
+cd opensuse-migration-tool
+
+distrobox create --image registry.opensuse.org/opensuse/leap-micro/6.0/toolbox --name micro60
+distrobox enter micro60
+
+zypper in bc jq curl dialog sed gawk
+./opensuse-migration-tool --dry-run
+sudo ./opensuse-migration-tool
 ```
 
-## Documentation for a manual migration
+### Leap 15.5 container
 
-These are wiki that describe the manual upgrade process with zypper dup
+```bash
+distrobox create --image opensuse/leap:15.5 --name leap155
+distrobox enter leap155
 
-https://en.opensuse.org/SDB:System_upgrade
-
-https://en.opensuse.org/SDB:How_to_migrate_to_SLE
-
-https://en.opensuse.org/SDB:System_upgrade_to_LeapMicro_6.0
-
-### Packaging
-```
-$ osc bco Base:System opensuse-migration-tool # fork Package from Base:System
-$ cd Base:System/opensuse-migration-tool
-$ osc service runall
-$ osc addremove
-$ vim *.changes # review changelog, deduplicate lines from git history etc.
-$ osc build # ensure that changes build locally
-$ osc commit
-$ osc sr # submit changes to the Base:System
-```
-**Maintainer typically forwards submission from devel project to openSUSE:Factory on accept.**
-
-If this is not the case you can submit it manually.
-
-```
-$ osc sr Base:System opensuse-migration-tool openSUSE:Factory
+sudo zypper in bc jq curl dialog sed gawk
+./opensuse-migration-tool --dry-run
+sudo ./opensuse-migration-tool
 ```
 
-Aside from Factory we want to ensure that supported Leap Micro and Leap releases get the update too.
-**Once changes are accepted in openUSSE:Factory do following.**
+⚠️ **Heads-up:** Toolbox environments are not truly immutable and may exhibit issues (e.g. bind-mounted `/etc/hostname` — [bug 1233982](https://bugzilla.opensuse.org/show_bug.cgi?id=1233982)).
 
+---
+
+## 📋 Manual Migration Resources
+
+For traditional `zypper dup` approaches:
+
+* 🔗 [System Upgrade (Leap)](https://en.opensuse.org/SDB:System_upgrade)
+* 🔗 [Leap → SLE Migration Guide](https://en.opensuse.org/SDB:How_to_migrate_to_SLE)
+* 🔗 [Leap Micro Upgrade](https://en.opensuse.org/SDB:System_upgrade_to_LeapMicro_6.0)
+
+---
+
+## 📦 Packaging & Submitting to openSUSE
+
+### Working on the package (Base\:System)
+
+```bash
+osc bco Base:System opensuse-migration-tool
+cd Base:System/opensuse-migration-tool
+
+osc service runall
+osc addremove
+vim *.changes     # Review changelog
+osc build         # Test build locally
+osc commit
+osc sr            # Submit to Base:System
 ```
-$ osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:Micro:6.1
-$ osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:16.0
-$ osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:15.6:Update
+
+### Forwarding to openSUSE\:Factory
+
+If not done by the maintainer:
+
+```bash
+osc sr Base:System opensuse-migration-tool openSUSE:Factory
 ```
+
+### Submitting to Leap and Leap Micro
+
+After Factory acceptance:
+
+```bash
+osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:Micro:6.1
+osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:16.0
+osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:15.6:Update
+```
+
+---
+
+## 🤝 Contributions Welcome!
+
+We're happy to receive PRs, testing reports, or feedback on supported scenarios.
+Please open issues or pull requests on GitHub.
