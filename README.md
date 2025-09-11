@@ -52,7 +52,7 @@ This project is licensed under the [Apache-2.0 License](http://www.apache.org/li
 
 ```bash
 sudo zypper in opensuse-migration-tool
-opensuse-migration-tool --dry-run
+/usr/sbin/opensuse-migration-tool --dry-run
 sudo opensuse-migration-tool
 reboot
 ```
