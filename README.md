@@ -7,7 +7,7 @@ A command-line tool to **simplify upgrades and migrations** across openSUSE dist
 > 🗪 **Experimental** — not recommended for production use yet. Use with caution until a complete test suite is implemented.
 
 ---
-<img width="1441" height="914" alt="image" src="https://github.com/user-attachments/assets/e3e47132-389f-4311-a077-97248f9d47fd" />
+<img width="1443" height="910" alt="image" src="https://github.com/user-attachments/assets/e7a37163-88a5-4de0-8e05-d8f543a3f61b" />
 
 ## 🌟 Key Features
 
