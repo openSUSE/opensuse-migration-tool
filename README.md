@@ -4,7 +4,7 @@
 
 A command-line tool to **simplify upgrades and migrations** across openSUSE distributions — including *Leap*, *Tumbleweed*, *Slowroll*, and even migrations from **Leap to SLE**.
 
-> 🗪 **Experimental** — not recommended for production use yet. Use with caution until a complete test suite is implemented.
+> 🗪 **Experimental** — Use with caution until a complete test suite is implemented.
 
 ---
 <img width="1443" height="910" alt="image" src="https://github.com/user-attachments/assets/e7a37163-88a5-4de0-8e05-d8f543a3f61b" />
