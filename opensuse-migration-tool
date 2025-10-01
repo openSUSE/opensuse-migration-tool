@@ -163,9 +163,14 @@ fi
 
 # System-specific options
 if [[ "$NAME" == "openSUSE Leap Micro" ]]; then
+    MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE MicroOS-Slowroll"
+    ((CURRENT_INDEX++))
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="MicroOS"
     ((CURRENT_INDEX++))
     populate_options "LeapMicro" "$VERSION" '.state!="EOL"'
+elif [[ "$NAME" == "openSUSE MicroOS" ]]; then
+    MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE MicroOS-Slowroll"
+    ((CURRENT_INDEX++))
 elif [[ "$NAME" == "openSUSE Leap" ]]; then
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="SUSE Linux Enterprise $(sed 's/\./ SP/' <<<"$VERSION")"
     ((CURRENT_INDEX++))
@@ -411,7 +416,7 @@ EOL
                 fi
             fi
             $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-            $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
+            $DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
             
@@ -428,14 +433,16 @@ EOL
                 echo "Unsupported arch '$ARCH' by Slowroll."
                 exit 1
             fi
+            set -x
             $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-            $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-Slowroll # install repos from the nextrelease
+            $DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-Slowroll # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
-            
-            $DRYRUN zypper dup -y --force-resolution --allow-vendor-change --download in-advance
+
+            # --allow-downgrade is important in case that you choose Tumblweed -> Slowroll migration
+            $DRYRUN zypper dup -y --force-resolution --allow-downgrade --allow-vendor-change --download in-advance
             if [ $? -ne 0 ]; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper dup --force-resolution --allow-vendor-change --download in-advance 
+                $DRYRUN zypper dup --force-resolution --allow-downgrade --allow-vendor-change --download in-advance
             fi
             ;;
         *"openSUSE LeapMicro"*)
@@ -443,7 +450,7 @@ EOL
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
             TARGET_VER=`echo ${MIGRATION_OPTIONS[$CHOICE]} | awk '{ print $NF }'`
             $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap-micro/$TARGET_VER/product/repo/openSUSE-Leap-Micro-$TARGET_VER-$ARCH/ $TMP_REPO_NAME
-            $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-LeapMicro # install repos from the nextrelease
+            $DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-LeapMicro # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
 
@@ -465,13 +472,36 @@ EOL
             fi
                 
             $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap/$TARGET_VER/repo/oss $TMP_REPO_NAME
-            $DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
+            $DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
 
             $DRYRUN zypper --releasever $TARGET_VER dup -y --force-resolution --allow-vendor-change --download-in-advance
             if [ $? -ne 0 ]; then # re-run zypper dup as interactive in case of failure in non-interactive mode
                 $DRYRUN zypper --releasever $TARGET_VER dup --force-resolution --allow-vendor-change --download-in-advance
+            fi
+            ;;
+        *"MicroOS-Slowroll"*)
+            $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
+            # https://download.opensuse.org/ports/ # for other arches
+            REPOURL="https://download.opensuse.org/slowroll/repo/oss/"
+            if [ "$ARCH" != "x86_64" ]; then
+                # Let's not messup any systems and make sure this is properly implemented first
+                echo "Unsupported arch '$ARCH'."
+                echo "Please open an issue at https://github.com/openSUSE/opensuse-migration-tool/issues"
+                echo "Make sure to add output of 'uname -i' and content of your /etc/os-release into the ticket."
+                exit 1
+            fi
+            set -x
+            $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
+			$DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME --allow-downgrade openSUSE-repos-Slowroll # install repos from the nextrelease
+            $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
+            $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
+
+            # --allow-downgrade is important in case that you choose MicroOS -> MicroOS-Slowroll migration
+            $DRYRUN zypper dup -y --force-resolution --allow-downgrade --allow-vendor-change --download in-advance
+            if [ $? -ne 0 ]; then # re-run zypper dup as interactive in case of failure in non-interactive mode
+                $DRYRUN zypper dup --force-resolution --allow-downgrade --allow-vendor-change --download in-advance
             fi
             ;;
         *"MicroOS"*)
@@ -489,7 +519,7 @@ EOL
                 fi
             fi
             $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-			$DRYRUN zypper in -y --from $TMP_REPO_NAME openSUSE-repos-MicroOS # install repos from the nextrelease
+			$DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-MicroOS # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
             
