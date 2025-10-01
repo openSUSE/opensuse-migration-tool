@@ -171,6 +171,9 @@ if [[ "$NAME" == "openSUSE Leap Micro" ]]; then
 elif [[ "$NAME" == "openSUSE MicroOS" ]]; then
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE MicroOS-Slowroll"
     ((CURRENT_INDEX++))
+elif [[ "$NAME" == "openSUSE MicroOS-Slowroll" ]]; then
+    MIGRATION_OPTIONS["$CURRENT_INDEX"]="MicroOS"
+    ((CURRENT_INDEX++))
 elif [[ "$NAME" == "openSUSE Leap" ]]; then
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="SUSE Linux Enterprise $(sed 's/\./ SP/' <<<"$VERSION")"
     ((CURRENT_INDEX++))
