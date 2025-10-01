@@ -26,10 +26,12 @@ General documentation about openSUSE Leap upgrade or Migration can be found at [
 ## 🔄 Supported Migration Paths
 
 ```
-Leap           → Leap n+1, SLES, Tumbleweed, Slowroll
-Leap Micro     → Leap Micro n+1, MicroOS
-Slowroll       → Tumbleweed
-Tumbleweed     → Slowroll
+Tumbleweed       → Slowroll
+Slowroll         → Tumbleweed
+MicroOS          → MicroOS-Slowroll
+MicroOS-Slowroll → MicroOS
+Leap             → Leap n+1, SLES, Tumbleweed, Slowroll
+Leap Micro       → Leap Micro n+1, MicroOS, MicroOS-Slowroll
 ```
 
 ⚠️ **Unsupported or discouraged paths**:
