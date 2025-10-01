@@ -218,39 +218,10 @@ CHOICE=$(dialog --clear \
     "${DIALOG_ITEMS[@]}" \
     2>&1 >/dev/tty) || exit
 
-rpmsave_repo() {
-### XXX: This could go away if we install openSUSE-repos before migration
-### It does the same thing
-for repo_file in \
-repo-backports-debug-update.repo repo-oss.repo repo-backports-update.repo \
-repo-sle-debug-update.repo repo-debug-non-oss.repo repo-sle-update.repo \
-repo-debug.repo repo-source.repo repo-debug-update.repo repo-update.repo \
-repo-debug-update-non-oss.repo repo-update-non-oss.repo repo-non-oss.repo \
-download.opensuse.org-oss.repo download.opensuse.org-non-oss.repo download.opensuse.org-tumbleweed.repo \
-repo-openh264.repo openSUSE-*-0.repo repo-main.repo $TMP_REPO_NAME.repo; do
-  if [ -f /etc/zypp/repos.d/$repo_file ]; then
-    echo "Storing old copy as /etc/zypp/repos.d/$repo_file.rpmsave"
-    $DRYRUN mv /etc/zypp/repos.d/$repo_file /etc/zypp/repos.d/$repo_file.rpmsave
-  fi
-done
-# regexpes
-for file in /etc/zypp/repos.d/openSUSE-*.repo; do
-    repo_file=$(basename $file)
-    if [ -f /etc/zypp/repos.d/$repo_file ]; then
-        echo "Storing old copy as /etc/zypp/repos.d/$repo_file.rpmsave"
-        $DRYRUN mv /etc/zypp/repos.d/$repo_file /etc/zypp/repos.d/$repo_file.rpmsave
-    fi
-done
-# Ensure to drop any SCC generated service/repo files for Leap
-# e.g. /etc/zypp/services.d/openSUSE_Leap_15.6_x86_64.service
-for file in /etc/zypp/services.d/openSUSE_*.service; do
-    service_file=$(basename $file)
-    if [ -f /etc/zypp/services.d/$service_file ]; then
-        echo "Storing old copy as /etc/zypp/repos.d/$service_file.rpmsave"
-        $DRYRUN mv /etc/zypp/services.d/$service_file /etc/zypp/services.d/$service_file.rpmsave
-    fi
-done
-}
+# Ensure that openSUSE-repos is always installed.
+# That handles also the old distribution repository cleanup
+$DRYRUN zypper in -y --force-resolution openSUSE-repos
+$DRYRUN zypper refs # so we don't see further refresh after disabling repo
 
 # Step: Detect and offer to disable 3rd-party repositories
 # This is the #1 reason for failed migration
@@ -387,9 +358,6 @@ EOL
 			fi
             $DRYRUN rm -r /etc/products.d/baseproduct
             $DRYRUN ln -s /etc/products.d/SLES.prod /etc/products.d/baseproduct
-            if [ -z "$DRYRUN" ]; then
-                rpmsave_repo # invalidates all standard openSUSE repos
-            fi
 
 	        $DRYRUN suseconnect -e  $EMAIL -r $REGCODE 
 	        $DRYRUN SUSEConnect -p PackageHub/$VERSION/$ARCH
@@ -419,7 +387,7 @@ EOL
                 fi
             fi
             $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-            $DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
+            $DRYRUN zypper in --repo $TMP_REPO_NAME -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-Tumbleweed # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
             
@@ -436,9 +404,8 @@ EOL
                 echo "Unsupported arch '$ARCH' by Slowroll."
                 exit 1
             fi
-            set -x
             $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-            $DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-Slowroll # install repos from the nextrelease
+            $DRYRUN zypper in --repo TMP_REPO_NAME -y --force-resolution --from $TMP_REPO_NAME --allow-downgrade openSUSE-repos-Slowroll # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
 
@@ -453,7 +420,7 @@ EOL
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
             TARGET_VER=`echo ${MIGRATION_OPTIONS[$CHOICE]} | awk '{ print $NF }'`
             $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap-micro/$TARGET_VER/product/repo/openSUSE-Leap-Micro-$TARGET_VER-$ARCH/ $TMP_REPO_NAME
-            $DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-LeapMicro # install repos from the nextrelease
+            $DRYRUN zypper in --repo $TMP_REPO_NAME -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-LeapMicro # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
 
@@ -475,7 +442,7 @@ EOL
             fi
                 
             $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap/$TARGET_VER/repo/oss $TMP_REPO_NAME
-            $DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
+            $DRYRUN zypper in --repo $TMP_REPO_NAME -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-Leap # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
 
@@ -495,9 +462,8 @@ EOL
                 echo "Make sure to add output of 'uname -i' and content of your /etc/os-release into the ticket."
                 exit 1
             fi
-            set -x
             $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-			$DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME --allow-downgrade openSUSE-repos-Slowroll # install repos from the nextrelease
+			$DRYRUN zypper in --repo $TMP_REPO_NAME -y --force-resolution --from $TMP_REPO_NAME --allow-downgrade openSUSE-repos-Slowroll # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
 
@@ -522,7 +488,7 @@ EOL
                 fi
             fi
             $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-			$DRYRUN zypper in -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-MicroOS # install repos from the nextrelease
+			$DRYRUN zypper in --repo $TMP_REPO_NAME -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-MicroOS # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refs # !Important! make sure that all repo files under index service were regenerated
             
