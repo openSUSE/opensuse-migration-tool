@@ -130,7 +130,7 @@ function populate_options() {
 
 # Required x86_64-v2 flags
 #required_v2_flags=("cx16" "sse4_1" "sse4_2" "popcnt" "movbe" "xsave")
-required_v2_flags=("cx16" "sse4_1" "sse4_2" "popcnt" "xsave")
+required_v2_flags=("cx16" "sse4_1" "sse4_2" "popcnt")
 
 # Required x86_64-v3 flags
 #required_v3_flags=("cx16" "sse4_1" "sse4_2" "popcnt" "movbe" "xsave" "avx" "avx2" "bmi1" "bmi2" "fma" "abm")
