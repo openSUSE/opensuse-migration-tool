@@ -405,7 +405,7 @@ EOL
                 exit 1
             fi
             $DRYRUN zypper addrepo -f $REPOURL $TMP_REPO_NAME
-            $DRYRUN zypper install --repo TMP_REPO_NAME -y --force-resolution --from $TMP_REPO_NAME --allow-downgrade openSUSE-repos-Slowroll # install repos from the nextrelease
+            $DRYRUN zypper install --repo $TMP_REPO_NAME -y --force-resolution --from $TMP_REPO_NAME --allow-downgrade openSUSE-repos-Slowroll # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refresh-services # !Important! make sure that all repo files under index service were regenerated
 
