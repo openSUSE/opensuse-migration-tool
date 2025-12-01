@@ -103,7 +103,7 @@ function print_help() {
 }
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --dry-run) DRYRUN="echo Would execute: "; shift ;;
+        --dry-run) DRYRUN="echo Would execute: "; export DRYRUN ; shift ;;
         --help) print_help ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
@@ -543,9 +543,13 @@ for task in $sorted_selected_tasks; do
     $DRYRUN $SCRIPT
 done
 
+if [[ -v DRYRUN ]] ; then
+	echo "Dry run completed, feel free to continue. "
+else
 #dialog --clear \
 #    --backtitle "[EXPERIMENTAL] Migration tool" \
 #    --title "Migration process completed" \
 #    --msgbox "\nMigration process completed.\nA reboot is recommended." 10 40
 #
-echo "Migration process completed. A reboot is recommended."
+	echo "Migration process completed. A reboot is recommended."
+fi

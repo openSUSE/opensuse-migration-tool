@@ -6,6 +6,16 @@
 
 set -euo pipefail
 
+# Elevated permissions check unless DRYRUN is set
+if [ -z "${DRYRUN:-}" ]; then
+    if [ "$EUID" -ne 0 ]; then
+        echo $DRYRUN
+        exec sudo "$0" "$@"
+    fi
+        # Requires elevated permissions or test will always fail
+        test -w / || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
+fi
+
 UPDATE_BOOTLOADER=$(command -v update-bootloader)
 
 if [ -z "$UPDATE_BOOTLOADER" ]; then
@@ -32,11 +42,11 @@ if [[ "${1:-}" == "--check" ]]; then
 fi
 
 log "Drop any SELinux boot options"
-sudo update-bootloader --del-option "security=selinux"
-sudo update-bootloader --del-option "enforcing=1"
-sudo update-bootloader --del-option "selinux=1"
+$DRYRUN sudo update-bootloader --del-option "security=selinux"
+$DRYRUN sudo update-bootloader --del-option "enforcing=1"
+$DRYRUN sudo update-bootloader --del-option "selinux=1"
 log "Adding AppArmor boot options"
-sudo update-bootloader --add-option "security=apparmor"
+$DRYRUN sudo update-bootloader --add-option "security=apparmor"
 
 if rpm -q patterns-base-apparmor &>/dev/null; then
     log "Package patterns-base-apparmor is already installed. Skipping."
