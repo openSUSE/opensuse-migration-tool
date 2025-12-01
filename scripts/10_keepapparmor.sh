@@ -6,6 +6,13 @@
 
 set -euo pipefail
 
+UPDATE_BOOTLOADER=$(command -v update-bootloader)
+
+if [ -z "$UPDATE_BOOTLOADER" ]; then
+    # It was not found in the PATH
+    echo -e "No update-bootloader found!\n"
+fi
+
 log() {
     echo "[MIGRATION] $1"
 }
