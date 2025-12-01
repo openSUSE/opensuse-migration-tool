@@ -24,7 +24,7 @@ error_exit() {
 
 # Check if we have security=apparmor as boot param
 if [[ "${1:-}" == "--check" ]]; then
-    if ! /usr/sbin/update-bootloader --get-option security | grep apparmor &>/dev/null; then
+    if ! $UPDATE_BOOTLOADER --get-option security | grep apparmor &>/dev/null; then
         exit 0
     else
         exit 1
