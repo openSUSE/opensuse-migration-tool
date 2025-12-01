@@ -7,6 +7,13 @@
 
 set -euo pipefail
 
+UPDATE_BOOTLOADER=$(command -v update-bootloader)
+
+if [ -z "$UPDATE_BOOTLOADER" ]; then
+    # It was not found in the PATH
+    echo -e "No update-bootloader found!\n"
+fi
+
 log() {
     echo "[MIGRATION] $1"
 }
@@ -18,7 +25,7 @@ error_exit() {
 
 # Check if we have security=selinux as boot param
 if [[ "${1:-}" == "--check" ]]; then
-    if ! /usr/sbin/update-bootloader --get-option security | grep selinux &>/dev/null; then
+    if ! $UPDATE_BOOTLOADER --get-option security | grep selinux &>/dev/null; then
         exit 0
     else
         exit 1
