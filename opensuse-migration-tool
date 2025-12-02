@@ -103,10 +103,11 @@ function print_help() {
 }
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --dry-run) DRYRUN="echo Would execute: "; export DRYRUN ; shift ;;
+        --dry-run) DRYRUN="echo Would execute: "; shift ;;
         --help) print_help ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
+    export DRYRUN ;
 done
 # Populate migration options
 function fetch_versions() {
