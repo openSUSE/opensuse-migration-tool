@@ -108,6 +108,7 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
+export DRYRUN
 # Populate migration options
 function fetch_versions() {
     local filter="$1"
@@ -543,9 +544,13 @@ for task in $sorted_selected_tasks; do
     $DRYRUN $SCRIPT
 done
 
+if [[ -v DRYRUN ]] ; then
+	echo "Dry run completed, feel free to continue. "
+else
 #dialog --clear \
 #    --backtitle "[EXPERIMENTAL] Migration tool" \
 #    --title "Migration process completed" \
 #    --msgbox "\nMigration process completed.\nA reboot is recommended." 10 40
 #
-echo "Migration process completed. A reboot is recommended."
+	echo "Migration process completed. A reboot is recommended."
+fi

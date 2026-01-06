@@ -6,6 +6,23 @@
 
 set -euo pipefail
 
+# Elevated permissions check unless DRYRUN is set
+if [ -z "${DRYRUN:-}" ]; then
+    if [ "$EUID" -ne 0 ]; then
+        exec sudo "$0" "$@"
+    fi
+        # Requires elevated permissions or test will always fail
+        test -w / || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
+fi
+
+UPDATE_BOOTLOADER=$(command -v update-bootloader)
+
+if [ -z "$UPDATE_BOOTLOADER" ]; then
+    # It was not found in the PATH; this is a critical dependency.
+    echo -e "No update-bootloader found in PATH. Exiting.\n" >&2
+    exit 1
+fi
+
 log() {
     echo "[MIGRATION] $1"
 }
@@ -17,7 +34,7 @@ error_exit() {
 
 # Check if we have security=apparmor as boot param
 if [[ "${1:-}" == "--check" ]]; then
-    if ! /usr/sbin/update-bootloader --get-option security | grep apparmor &>/dev/null; then
+    if ! $UPDATE_BOOTLOADER --get-option security | grep apparmor &>/dev/null; then
         exit 0
     else
         exit 1
@@ -25,11 +42,11 @@ if [[ "${1:-}" == "--check" ]]; then
 fi
 
 log "Drop any SELinux boot options"
-sudo update-bootloader --del-option "security=selinux"
-sudo update-bootloader --del-option "enforcing=1"
-sudo update-bootloader --del-option "selinux=1"
+$DRYRUN sudo update-bootloader --del-option "security=selinux"
+$DRYRUN sudo update-bootloader --del-option "enforcing=1"
+$DRYRUN sudo update-bootloader --del-option "selinux=1"
 log "Adding AppArmor boot options"
-sudo update-bootloader --add-option "security=apparmor"
+$DRYRUN sudo update-bootloader --add-option "security=apparmor"
 
 if rpm -q patterns-base-apparmor &>/dev/null; then
     log "Package patterns-base-apparmor is already installed. Skipping."
@@ -37,7 +54,7 @@ if rpm -q patterns-base-apparmor &>/dev/null; then
 
 else
     log "Installing packages: patterns-base-apparmor"
-    if sudo zypper --non-interactive install --force-resolution patterns-base-apparmor; then
+    if $DRYRUN sudo zypper --non-interactive install --force-resolution patterns-base-apparmor; then
         log "Installation completed successfully."
     else
         error_exit "Package installation failed. Please check zypper logs or try again manually."

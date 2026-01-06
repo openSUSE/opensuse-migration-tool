@@ -7,6 +7,22 @@
 
 set -euo pipefail
 
+# Elevated permissions check unless DRYRUN is set
+if [ -z "${DRYRUN:-}" ]; then
+    if [ "$EUID" -ne 0 ]; then
+        exec sudo "$0" "$@"
+    fi
+        # Requires elevated permissions or test will always fail
+        test -w / || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
+fi  
+
+UPDATE_BOOTLOADER=$(command -v update-bootloader)
+
+if [ -z "$UPDATE_BOOTLOADER" ]; then
+    # It was not found in the PATH
+    echo -e "No update-bootloader found!\n"
+fi
+
 log() {
     echo "[MIGRATION] $1"
 }
@@ -18,7 +34,7 @@ error_exit() {
 
 # Check if we have security=selinux as boot param
 if [[ "${1:-}" == "--check" ]]; then
-    if ! /usr/sbin/update-bootloader --get-option security | grep selinux &>/dev/null; then
+    if ! $UPDATE_BOOTLOADER --get-option security | grep selinux &>/dev/null; then
         exit 0
     else
         exit 1
@@ -26,23 +42,23 @@ if [[ "${1:-}" == "--check" ]]; then
 fi
 
 log "Drop AppArmor boot options"
-sudo update-bootloader --del-option "security=apparmor"
+$DRYRUN sudo update-bootloader --del-option "security=apparmor"
 
 log "Add any SELinux boot options"
-sudo update-bootloader --add-option "security=selinux"
-sudo update-bootloader --add-option "enforcing=1"
-sudo update-bootloader --add-option "selinux=1"
+$DRYRUN sudo update-bootloader --add-option "security=selinux"
+$DRYRUN sudo update-bootloader --add-option "enforcing=1"
+$DRYRUN sudo update-bootloader --add-option "selinux=1"
 
 if rpm -q patterns-base-apparmor &>/dev/null; then
     log "Uninstalling packages: patterns-base-apparmor"
-    if sudo zypper --non-interactive remove --force-resolution patterns-base-apparmor; then
+    if $DRYRUN sudo zypper --non-interactive remove --force-resolution patterns-base-apparmor; then
         log "Uninstallation of AppArmor completed successfully."
     else
         error_exit "Package uninstallation failed. Please check zypper logs or try again manually."
     fi
-
-else
-    log "Installing packages: patterns-selinux selinux-policy-targeted-gaming"
-    sudo zypper --non-interactive install -t pattern --force-resolution selinux
-    sudo zypper --non-interactive install selinux-policy-targeted-gaming
 fi
+# user said he wants SElinux, so install SElinux pattern
+log "Installing packages: patterns-selinux selinux-policy-targeted-gaming"
+$DRYRUN sudo zypper --non-interactive install -t pattern --force-resolution selinux
+# this SElinux package is providing rules for gaming
+$DRYRUN sudo zypper --non-interactive install selinux-policy-targeted-gaming
