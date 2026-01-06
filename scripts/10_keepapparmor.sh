@@ -53,7 +53,7 @@ if rpm -q patterns-base-apparmor &>/dev/null; then
 
 else
     log "Installing packages: patterns-base-apparmor"
-    if sudo $DRYRUN zypper --non-interactive install --force-resolution patterns-base-apparmor; then
+    if $DRYRUN sudo zypper --non-interactive install --force-resolution patterns-base-apparmor; then
         log "Installation completed successfully."
     else
         error_exit "Package installation failed. Please check zypper logs or try again manually."
