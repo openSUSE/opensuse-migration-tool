@@ -10,8 +10,8 @@ if [ -z "${DRYRUN:-}" ]; then
     if [ "$EUID" -ne 0 ]; then
         exec sudo "$0" "$@"
     fi
-        # Requires elevated permissions or test will always fail
-        test -w / || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
+    # Requires elevated permissions or test will always fail
+    test -w / || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
 fi
 
 log() {
