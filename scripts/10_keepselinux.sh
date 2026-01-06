@@ -42,16 +42,16 @@ if [[ "${1:-}" == "--check" ]]; then
 fi
 
 log "Drop AppArmor boot options"
-$DRYRUN sudo update-bootloader --del-option "security=apparmor"
+$DRYRUN update-bootloader --del-option "security=apparmor"
 
 log "Add any SELinux boot options"
-$DRYRUN sudo update-bootloader --add-option "security=selinux"
-$DRYRUN sudo update-bootloader --add-option "enforcing=1"
-$DRYRUN sudo update-bootloader --add-option "selinux=1"
+$DRYRUN update-bootloader --add-option "security=selinux"
+$DRYRUN update-bootloader --add-option "enforcing=1"
+$DRYRUN update-bootloader --add-option "selinux=1"
 
 if rpm -q patterns-base-apparmor &>/dev/null; then
     log "Uninstalling packages: patterns-base-apparmor"
-    if $DRYRUN sudo zypper --non-interactive remove --force-resolution patterns-base-apparmor; then
+    if $DRYRUN zypper --non-interactive remove --force-resolution patterns-base-apparmor; then
         log "Uninstallation of AppArmor completed successfully."
     else
         error_exit "Package uninstallation failed. Please check zypper logs or try again manually."
@@ -59,6 +59,6 @@ if rpm -q patterns-base-apparmor &>/dev/null; then
 fi
 # user said he wants SElinux, so install SElinux pattern
 log "Installing packages: patterns-selinux selinux-policy-targeted-gaming"
-$DRYRUN sudo zypper --non-interactive install -t pattern --force-resolution selinux
+$DRYRUN zypper --non-interactive install -t pattern --force-resolution selinux
 # this SElinux package is providing rules for gaming
-$DRYRUN sudo zypper --non-interactive install selinux-policy-targeted-gaming
+$DRYRUN zypper --non-interactive install selinux-policy-targeted-gaming
