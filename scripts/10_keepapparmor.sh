@@ -42,11 +42,11 @@ if [[ "${1:-}" == "--check" ]]; then
 fi
 
 log "Drop any SELinux boot options"
-$DRYRUN sudo update-bootloader --del-option "security=selinux"
-$DRYRUN sudo update-bootloader --del-option "enforcing=1"
-$DRYRUN sudo update-bootloader --del-option "selinux=1"
+$DRYRUN update-bootloader --del-option "security=selinux"
+$DRYRUN update-bootloader --del-option "enforcing=1"
+$DRYRUN update-bootloader --del-option "selinux=1"
 log "Adding AppArmor boot options"
-$DRYRUN sudo update-bootloader --add-option "security=apparmor"
+$DRYRUN update-bootloader --add-option "security=apparmor"
 
 if rpm -q patterns-base-apparmor &>/dev/null; then
     log "Package patterns-base-apparmor is already installed. Skipping."
@@ -54,7 +54,7 @@ if rpm -q patterns-base-apparmor &>/dev/null; then
 
 else
     log "Installing packages: patterns-base-apparmor"
-    if $DRYRUN sudo zypper --non-interactive install --force-resolution patterns-base-apparmor; then
+    if $DRYRUN zypper --non-interactive install --force-resolution patterns-base-apparmor; then
         log "Installation completed successfully."
     else
         error_exit "Package installation failed. Please check zypper logs or try again manually."

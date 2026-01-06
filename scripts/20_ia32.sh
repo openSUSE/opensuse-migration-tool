@@ -5,6 +5,15 @@
 
 set -euo pipefail
 
+# Elevated permissions check unless DRYRUN is set
+if [ -z "${DRYRUN:-}" ]; then
+    if [ "$EUID" -ne 0 ]; then
+        exec sudo "$0" "$@"
+    fi
+    # Requires elevated permissions or test will always fail
+    test -w / || { echo "Please run the tool inside 'transactional-update shell' on Immutable systems."; exit 1; }
+fi
+
 log() {
     echo "[MIGRATION] $1"
 }
@@ -24,7 +33,7 @@ if [[ "${1:-}" == "--check" ]]; then
 fi
 
 log "Installing packages: grub2-compat-ia32"
-if sudo zypper --non-interactive install --force-resolution grub2-compat-ia32; then
+if $DRYRUN zypper --non-interactive install --force-resolution grub2-compat-ia32; then
     log "Installation completed successfully."
 else
     error_exit "Package installation failed. Please check zypper logs or try again manually."
