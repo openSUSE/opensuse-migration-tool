@@ -51,7 +51,7 @@ $DRYRUN sudo update-bootloader --add-option "selinux=1"
 
 if rpm -q patterns-base-apparmor &>/dev/null; then
     log "Uninstalling packages: patterns-base-apparmor"
-    if sudo $DRYRUN zypper --non-interactive remove --force-resolution patterns-base-apparmor; then
+    if $DRYRUN sudo zypper --non-interactive remove --force-resolution patterns-base-apparmor; then
         log "Uninstallation of AppArmor completed successfully."
     else
         error_exit "Package uninstallation failed. Please check zypper logs or try again manually."
