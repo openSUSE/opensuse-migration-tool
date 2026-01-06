@@ -10,7 +10,6 @@ set -euo pipefail
 # Elevated permissions check unless DRYRUN is set
 if [ -z "${DRYRUN:-}" ]; then
     if [ "$EUID" -ne 0 ]; then
-	echo $DRYRUN
         exec sudo "$0" "$@"
     fi
         # Requires elevated permissions or test will always fail
