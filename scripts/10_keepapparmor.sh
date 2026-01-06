@@ -18,8 +18,9 @@ fi
 UPDATE_BOOTLOADER=$(command -v update-bootloader)
 
 if [ -z "$UPDATE_BOOTLOADER" ]; then
-    # It was not found in the PATH
-    echo -e "No update-bootloader found!\n"
+    # It was not found in the PATH; this is a critical dependency.
+    echo -e "No update-bootloader found in PATH. Exiting.\n" >&2
+    exit 1
 fi
 
 log() {
