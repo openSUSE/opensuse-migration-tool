@@ -107,8 +107,8 @@ while [[ $# -gt 0 ]]; do
         --help) print_help ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
-    export DRYRUN ;
 done
+export DRYRUN
 # Populate migration options
 function fetch_versions() {
     local filter="$1"
