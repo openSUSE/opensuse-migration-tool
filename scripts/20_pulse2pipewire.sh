@@ -31,7 +31,7 @@ if [[ "${1:-}" == "--check" ]]; then
     else
         exit 1
     fi
-}
+fi
 
 log "Starting PulseAudio to PipeWire migration..."
 
