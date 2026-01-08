@@ -58,7 +58,5 @@ if rpm -q patterns-base-apparmor &>/dev/null; then
     fi
 fi
 # user said he wants SElinux, so install SElinux pattern
-log "Installing packages: patterns-selinux selinux-policy-targeted-gaming"
+log "Installing packages: patterns-selinux"
 $DRYRUN zypper --non-interactive install -t pattern --force-resolution selinux
-# this SElinux package is providing rules for gaming
-$DRYRUN zypper --non-interactive install selinux-policy-targeted-gaming
