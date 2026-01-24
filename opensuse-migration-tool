@@ -510,6 +510,7 @@ for script in "$POST_MIGRATION_DIR"/*.sh; do
     name=$(basename "$script" .sh)
     if "$script" --check; then
         case "$name" in
+            "10_disableselinux") desc="Disable SELinux" ;;
             "10_keepapparmor") desc="Keep AppArmor (SELinux is the new default)" ;;
             "10_keepselinux") desc="Switch to SELinux (new default)" ;;
             "20_pulse2pipewire") desc="Switch to PipeWire (new default)" ;;
