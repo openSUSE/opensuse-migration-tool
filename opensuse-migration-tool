@@ -44,7 +44,6 @@ if [[ ! -d "$POST_MIGRATION_DIR" ]]; then
 fi
 
 # Set nice green instead of default blue
-
 if [[ $COLORTERM =~ ^(truecolor|24bit)$ ]]; then
 	DIALOGRC="/usr/share/opensuse-migration-tool/dialogrc"
 	if [ -f "$SCRIPT_DIR/dialogrc" ]; then
