@@ -4,8 +4,6 @@
 # https://code.opensuse.org/leap/features/issue/140
 # https://en.opensuse.org/openSUSE:Pipewire#Installation
 
-set -euo pipefail
-
 # Elevated permissions check unless DRYRUN is set
 if [ -z "${DRYRUN:-}" ]; then
     if [ "$EUID" -ne 0 ]; then

@@ -3,8 +3,6 @@
 # SLES 16 disables 32bit support in kernel by default
 # Things like Steam, Proton, Virtualbox will need it
 
-set -euo pipefail
-
 # Elevated permissions check unless DRYRUN is set
 if [ -z "${DRYRUN:-}" ]; then
     if [ "$EUID" -ne 0 ]; then
