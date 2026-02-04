@@ -32,6 +32,13 @@ error_exit() {
     exit 1
 }
 
+# Ensure update-bootloader is available (Leap 16+)
+if ! command -v update-bootloader >/dev/null 2>&1; then
+    log "update-bootloader not found, installing it"
+    $DRYRUN zypper --non-interactive install --force-resolution update-bootloader \
+        || error_exit "Failed to install update-bootloader"
+fi
+
 # Check if we have security=apparmor as boot param
 if [[ "${1:-}" == "--check" ]]; then
     if ! $UPDATE_BOOTLOADER --get-option security | grep apparmor &>/dev/null; then
