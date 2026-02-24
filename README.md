@@ -50,6 +50,19 @@ This project is licensed under the [Apache-2.0 License](http://www.apache.org/li
 
 ## 🧪 Quick Start: Testing the Tool
 
+### From git
+
+This is also recommended for migration from older Leap releases that 15.6.
+Or generally for systems which no longer receive updates.
+
+```bash
+sudo zypper in bc jq curl dialog sed gawk git # to install dependencies
+git clone https://github.com/openSUSE/opensuse-migration-tool.git
+cd opensuse-migration-tool
+./opensuse-migration-tool --dry-run # optionally to test the tool execution
+sudo ./opensuse-migration-tool
+reboot
+```
 > Always use `--dry-run` first to preview planned changes!
 
 ### 🔧 On regular systems (Leap, Tumbleweed, Slowroll)
