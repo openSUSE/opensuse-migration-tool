@@ -553,7 +553,7 @@ for task in $sorted_selected_tasks; do
     $DRYRUN $SCRIPT
 done
 
-if [[ -v $DRYRUN ]] ; then
+if [[ -n "$DRYRUN" ]] ; then
 	echo "Dry run completed, feel free to continue. "
 else
 #dialog --clear \
