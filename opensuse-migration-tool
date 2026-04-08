@@ -87,7 +87,8 @@ fi
 DRYRUN=""
 TMP_REPO_NAME="tmp-migration-tool-repo" # tmp repo to get sles-release or openSUSE-repos-*
 # Initialize MIGRATION_OPTIONS as an empty associative array
-declare -A MIGRATION_OPTIONS=()
+declare -A MIGRATION_OPTIONS=()  # human-readable menu label with tips etc
+declare -A MIGRATION_RAW=()      # machine-readable versions
 declare -A AVAILABLE_TASKS=()
 
 CURRENT_INDEX=1
@@ -118,12 +119,18 @@ function populate_options() {
     local key="$1"
     local current_version="$2"
     local filter="$3"
+    local min_version="${4:-}"
+    local suffix="${5:-}"
     local versions
+
     versions=$(fetch_versions "$filter" "$key")
     while IFS= read -r version; do
         if (( $(bc <<<"$current_version < $version") )); then
-            MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE $key $version"
-            ((CURRENT_INDEX++))
+            if [[ -z "$min_version" ]] || (( $(bc <<<"$version >= $min_version") )); then
+                MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE $key $version$suffix"
+                MIGRATION_RAW["$CURRENT_INDEX"]="$version"
+                ((CURRENT_INDEX++))
+            fi
         fi
     done <<<"$versions"
 }
@@ -167,6 +174,8 @@ if [[ "$NAME" == "openSUSE Leap Micro" ]]; then
     ((CURRENT_INDEX++))
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="MicroOS"
     ((CURRENT_INDEX++))
+    # add only Leap versions starting with 16.1
+    populate_options "Leap" "$VERSION" '.state!="EOL"' "16.1" " (immutable, replaces Leap Micro)"
     populate_options "LeapMicro" "$VERSION" '.state!="EOL"'
 elif [[ "$NAME" == "openSUSE MicroOS" ]]; then
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE MicroOS-Slowroll"
@@ -418,7 +427,8 @@ EOL
         *"openSUSE LeapMicro"*)
             # Has to be before Leap*
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
-            TARGET_VER=`echo ${MIGRATION_OPTIONS[$CHOICE]} | awk '{ print $NF }'`
+            # !Important to use MIGRATION_RAW as otherwise MIGRATION_OPTIONS have tips and other decorations
+            TARGET_VER=`echo ${MIGRATION_RAW[$CHOICE]} | awk '{ print $NF }'`
             $DRYRUN zypper addrepo -f https://download.opensuse.org/distribution/leap-micro/$TARGET_VER/product/repo/openSUSE-Leap-Micro-$TARGET_VER-$ARCH/ $TMP_REPO_NAME
             $DRYRUN zypper install --repo $TMP_REPO_NAME -y --force-resolution --from $TMP_REPO_NAME openSUSE-repos-LeapMicro # install repos from the nextrelease
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
@@ -431,7 +441,7 @@ EOL
             ;;
         *"openSUSE Leap"*)
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
-            TARGET_VER=`echo ${MIGRATION_OPTIONS[$CHOICE]} | awk '{ print $NF }'`
+            TARGET_VER=`echo ${MIGRATION_RAW[$CHOICE]} | awk '{ print $NF }'`
             if [ "$ARCH" == "x86_64" ] && [[ ${TARGET_VER%.*} -ge 16 ]] && ! check_x86_64_v2_support; then
                 #echo "Unsupported CPU for openSUSE Leap $TARGET_VER"
                 dialog --clear \
@@ -543,7 +553,7 @@ for task in $sorted_selected_tasks; do
     $DRYRUN $SCRIPT
 done
 
-if [[ -v DRYRUN ]] ; then
+if [[ -v $DRYRUN ]] ; then
 	echo "Dry run completed, feel free to continue. "
 else
 #dialog --clear \
