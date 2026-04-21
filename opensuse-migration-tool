@@ -337,7 +337,6 @@ if [[ -n $CHOICE ]]; then
 
             MAJVER=$(echo $VERSION| awk -F"." '{ print $1 }') # 15
             MINVER=$(echo $VERSION| awk -F"." '{ print $2 }') # 6
-            echo $REGCODE
             $DRYRUN zypper install -y suseconnect-ng snapper grub2-snapper-plugin
             # Backup /etc/os-release before release package removal
             echo "Backing up /etc/os-release as /etc/os-release.backup"
@@ -368,8 +367,8 @@ EOL
             $DRYRUN rm -r /etc/products.d/baseproduct
             $DRYRUN ln -s /etc/products.d/SLES.prod /etc/products.d/baseproduct
 
-	        $DRYRUN suseconnect -e  $EMAIL -r $REGCODE 
-	        $DRYRUN SUSEConnect -p PackageHub/$VERSION/$ARCH
+	        $DRYRUN suseconnect -e "$EMAIL" -r "$REGCODE"
+	        $DRYRUN SUSEConnect -p "PackageHub/$VERSION/$ARCH"
 
             $DRYRUN zypper dup -y --force-resolution --allow-vendor-change --download in-advance
             if [ $? -ne 0 ]; then # re-run zypper dup as interactive in case of failure in non-interactive mode
@@ -487,7 +486,7 @@ EOL
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
             REPOURL="https://download.opensuse.org/tumbleweed/repo/oss/"
             if [ "$ARCH" != "x86_64" ]; then
-                REPOURL=https://download.opensuse.org/ports/$ARCH/tumbleweed/repo/oss # XXX this will likely work only for aarch64
+                REPOURL="https://download.opensuse.org/ports/$ARCH/tumbleweed/repo/oss"  # XXX this will likely work only for aarch64
                 if [ "$ARCH" != "aarch64" ]; then 
                     # Let's not messup any systems and make sure this is properly implemented first
                     echo "Unsupported arch '$ARCH'."
