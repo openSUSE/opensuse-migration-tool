@@ -386,7 +386,7 @@ EOL
             # https://download.opensuse.org/ports/ # for other arches
             REPOURL="https://download.opensuse.org/tumbleweed/repo/oss/"
             if [ "$ARCH" != "x86_64" ]; then
-                REPOURL=https://download.opensuse.org/ports/$ARCH # XXX this will likely work only for aarch64
+                REPOURL=https://download.opensuse.org/ports/$ARCH/tumbleweed/repo/oss # XXX this will likely work only for aarch64
                 if [ "$ARCH" != "aarch64" ]; then 
                     # Let's not messup any systems and make sure this is properly implemented first
                     echo "Unsupported arch '$ARCH'."
@@ -485,10 +485,9 @@ EOL
             ;;
         *"MicroOS"*)
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
-            # https://download.opensuse.org/ports/ # for other arches
             REPOURL="https://download.opensuse.org/tumbleweed/repo/oss/"
             if [ "$ARCH" != "x86_64" ]; then
-                REPOURL=https://download.opensuse.org/ports/$ARCH # XXX this will likely work only for aarch64
+                REPOURL=https://download.opensuse.org/ports/$ARCH/tumbleweed/repo/oss # XXX this will likely work only for aarch64
                 if [ "$ARCH" != "aarch64" ]; then 
                     # Let's not messup any systems and make sure this is properly implemented first
                     echo "Unsupported arch '$ARCH'."
