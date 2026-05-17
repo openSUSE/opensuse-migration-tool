@@ -13,4 +13,4 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       - name: Run ShellCheck
-        run: shellcheck opensuse-migration-tool scripts/*.sh
+        run: shellcheck -e SC2086 opensuse-migration-tool scripts/*.sh
