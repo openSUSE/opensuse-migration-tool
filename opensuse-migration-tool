@@ -63,10 +63,12 @@ for tool in "${REQUIRED_TOOLS[@]}"; do
     fi
 done
 
-if which susedialog >/dev/null 2>&1; then
-    DIALOGCMD="susedialog"
-elif which dialog >/dev/null 2>&1; then
-    DIALOGCMD="dialog"
+if [[ -n "${DIALOGCMD:-}" ]] && which "$DIALOGCMD" >/dev/null 2>&1; then
+    DIALOGCMD=$(which "$DIALOGCMD")
+elif DIALOGCMD=$(which susedialog 2>/dev/null); then
+    :
+elif DIALOGCMD=$(which dialog 2>/dev/null); then
+    :
 else
     echo "Neither susedialog nor dialog is installed."
     echo "Please run: sudo zypper install dialog"
@@ -186,7 +188,7 @@ function check_x86_64_v2_support() {
 # Elevated permissions check unless DRYRUN is set
 if [ -z "${DRYRUN:-}" ]; then
     if [ "$EUID" -ne 0 ]; then
-        exec sudo "$0" "$@"
+        exec sudo DIALOGCMD="$DIALOGCMD" "$0" "$@"
     fi
 
 	# Requires elevated permissions or test will always fail
