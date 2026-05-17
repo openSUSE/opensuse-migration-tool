@@ -54,7 +54,7 @@ fi
 
 # Ensure required tools are installed
 # Double check for zypper in case we're on dnf-based system
-REQUIRED_TOOLS=("bc" "jq" "curl" "dialog" "sed" "gawk" "zypper")
+REQUIRED_TOOLS=("bc" "jq" "curl" "sed" "gawk" "zypper")
 for tool in "${REQUIRED_TOOLS[@]}"; do
     if ! command -v "$tool" &>/dev/null; then
         echo "$tool is required but not installed."
@@ -62,6 +62,17 @@ for tool in "${REQUIRED_TOOLS[@]}"; do
         exit 1
     fi
 done
+
+if which susedialog >/dev/null 2>&1; then
+    DIALOGCMD="susedialog"
+elif which dialog >/dev/null 2>&1; then
+    DIALOGCMD="dialog"
+else
+    echo "Neither susedialog nor dialog is installed."
+    echo "Please run: sudo zypper install dialog"
+    exit 1
+fi
+
 # Ensure Bash version is 4.0+
 if ((BASH_VERSINFO[0] < 4)); then
     echo "This script requires Bash 4.0 or higher." >&2
@@ -111,6 +122,7 @@ function print_help() {
     echo "Report issues: https://github.com/openSUSE/opensuse-migration-tool"
     exit 0
 }
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --dry-run) DRYRUN="echo Would execute: "; shift ;;
@@ -213,7 +225,7 @@ elif [[ "$NAME" == "openSUSE Tumbleweed-Slowroll" ]]; then
     MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE Tumbleweed"
     ((CURRENT_INDEX++))
 else
-    dialog --clear \
+    $DIALOGCMD --clear \
     --title "[EXPERIMENTAL] System Migration" \
 	--msgbox "\nMigration from $NAME is currently not supported.\n\nPlease report issue at https://github.com/openSUSE/opensuse-migration-tool" \
     10 60
@@ -222,7 +234,7 @@ fi
 
 # Display migration options
 if [[ ${#MIGRATION_OPTIONS[@]} -eq 0 ]]; then
-    dialog --clear \
+    $DIALOGCMD --clear \
     --title "[EXPERIMENTAL] System Migration" \
 	--msgbox "\nNo migration options available from $NAME.\n\nPlease report issue at https://github.com/openSUSE/opensuse-migration-tool." \
     10 60
@@ -234,7 +246,7 @@ for key in "${!MIGRATION_OPTIONS[@]}"; do
     DIALOG_ITEMS+=("$key" "${MIGRATION_OPTIONS[$key]}")
 done
 # Display dialog and get choice
-CHOICE=$(dialog --clear \
+CHOICE=$($DIALOGCMD --clear \
     --title "[EXPERIMENTAL] System Migration" \
     --menu "Select the migration target from $NAME:" \
     20 60 10 \
@@ -283,7 +295,7 @@ is unreachable or incompatible.
 You can deselect any repositories you prefer to keep enabled:
 EOF
 )
-    SELECTED_REPOS=$(dialog --clear \
+    SELECTED_REPOS=$($DIALOGCMD --clear \
         --title "Disable Third-Party Repositories" \
         --checklist "$checklist_msg" \
         20 80 10 \
@@ -306,7 +318,7 @@ if [[ -n $CHOICE ]]; then
 
             while true; do
                 # Capture output and return code
-                OUTPUT=$(dialog --clear \
+                OUTPUT=$($DIALOGCMD --clear \
                     --backtitle "SCC - Registration code" \
                     --title "SCC - Registration code" \
                     --form "\nPlease enter valid email and registration code." 25 60 16 \
@@ -320,7 +332,7 @@ if [[ -n $CHOICE ]]; then
 
                 # Handle cancel or escape
                 if [[ $RETCODE -ne 0 ]]; then
-                    dialog --clear \
+                    $DIALOGCMD --clear \
                         --backtitle "SCC - Registration code" \
                         --title "Operation Cancelled" \
                         --msgbox "You have cancelled the registration process." 10 40
@@ -336,7 +348,7 @@ if [[ -n $CHOICE ]]; then
                 if [[ -n "$EMAIL" && -n "$REGCODE" ]]; then
                     break
                 else
-                    dialog --clear \
+                    $DIALOGCMD --clear \
                         --backtitle "SCC - Registration code" \
                         --title "Input Error" \
                         --msgbox "Both email and registration code are required. Please try again." 10 40
@@ -457,7 +469,7 @@ EOL
             TARGET_VER=`echo ${MIGRATION_RAW[$CHOICE]} | awk '{ print $NF }'`
             if [ "$ARCH" == "x86_64" ] && [[ ${TARGET_VER%.*} -ge 16 ]] && ! check_x86_64_v2_support; then
                 #echo "Unsupported CPU for openSUSE Leap $TARGET_VER"
-                dialog --clear \
+                $DIALOGCMD --clear \
                     --title "System Migration - Unsupported architecture" \
 	--msgbox "\n${MIGRATION_OPTIONS[$CHOICE]} does not support your CPU architecture. The minimum baseline is x86_64-v2.\n\nSee https://en.opensuse.org/openSUSE:X86-64-Architecture-Levels" \
     10 60
@@ -546,7 +558,7 @@ if [[ ${#AVAILABLE_TASKS[@]} -gt 0 ]]; then
     for key in "${!AVAILABLE_TASKS[@]}"; do
         CHECKLIST_ITEMS+=("$key" "${AVAILABLE_TASKS[$key]}" "off")
     done
-    SELECTED_TASKS=$(dialog --clear \
+    SELECTED_TASKS=$($DIALOGCMD --clear \
         --title "Post-Migration Optional Tasks" \
         --checklist "Select tasks to run after system upgrade:" \
         20 70 10 \
@@ -568,7 +580,7 @@ done
 if [[ -n "$DRYRUN" ]] ; then
 	echo "Dry run completed, feel free to continue. "
 else
-#dialog --clear \
+#$DIALOGCMD --clear \
 #    --backtitle "[EXPERIMENTAL] Migration tool" \
 #    --title "Migration process completed" \
 #    --msgbox "\nMigration process completed.\nA reboot is recommended." 10 40
