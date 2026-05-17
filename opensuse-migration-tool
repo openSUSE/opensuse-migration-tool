@@ -63,15 +63,15 @@ for tool in "${REQUIRED_TOOLS[@]}"; do
     fi
 done
 
-if [[ -n "${DIALOGCMD:-}" ]] && which "$DIALOGCMD" >/dev/null 2>&1; then
-    DIALOGCMD=$(which "$DIALOGCMD")
-elif DIALOGCMD=$(which susedialog 2>/dev/null); then
+if [[ -n "${DIALOGCMD:-}" ]] && command -v "$DIALOGCMD" >/dev/null 2>&1; then
+    DIALOGCMD=$(command -v "$DIALOGCMD")
+elif DIALOGCMD=$(command -v susedialog 2>/dev/null); then
     :
-elif DIALOGCMD=$(which dialog 2>/dev/null); then
+elif DIALOGCMD=$(command -v dialog 2>/dev/null); then
     :
 else
     echo "Neither susedialog nor dialog is installed."
-    echo "Please run: sudo zypper install dialog"
+    echo "Please run: sudo zypper install susedialog"
     exit 1
 fi
 
