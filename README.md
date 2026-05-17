@@ -9,7 +9,9 @@ A command-line tool to **simplify upgrades and migrations** across openSUSE dist
 General documentation about openSUSE Leap upgrade or Migration can be found at [SDB:System_upgrade](https://en.opensuse.org/SDB:System_upgrade) wiki.
 
 ---
-<img width="1443" height="910" alt="image" src="https://github.com/user-attachments/assets/e7a37163-88a5-4de0-8e05-d8f543a3f61b" />
+<img width="1334" height="838" alt="opensuse-migration-tool" src="https://github.com/user-attachments/assets/76a55810-5080-461a-88ec-b92dc405324b" />
+
+
 
 ## 🌟 Key Features
 
