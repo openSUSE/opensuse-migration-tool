@@ -10,7 +10,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Fetch live distributions.json
-        run: curl -sf https://get.opensuse.org/api/v0/distributions.json | jq --sort-keys . > /tmp/live.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sf https://get.opensuse.org/api/v0/distributions.json | jq --sort-keys . > /tmp/live.json
 
       - name: Normalize local distributions.json
         run: jq --sort-keys . distributions.json > /tmp/local.json
