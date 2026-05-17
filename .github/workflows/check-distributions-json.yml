@@ -1,0 +1,29 @@
+name: Check distributions.json is up to date
+
+on:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch live distributions.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sf https://get.opensuse.org/api/v0/distributions.json | jq --sort-keys . > /tmp/live.json
+
+      - name: Normalize local distributions.json
+        run: jq --sort-keys . distributions.json > /tmp/local.json
+
+      - name: Diff local vs live
+        run: |
+          if ! diff -u /tmp/local.json /tmp/live.json; then
+            echo ""
+            echo "::error::distributions.json is out of date."
+            echo "Run: curl -s https://get.opensuse.org/api/v0/distributions.json | jq . > distributions.json"
+            exit 1
+          fi
+          echo "distributions.json is up to date."

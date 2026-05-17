@@ -78,11 +78,21 @@ ARCH=$(uname -i) # x86_64 XXX: check for other arches
 
 # Fetch distribution data from API
 API_URL="https://get.opensuse.org/api/v0/distributions.json"
-API_DATA=$(curl -s "$API_URL")
+API_DATA=$(curl -s --fail "$API_URL")
 if [ $? != 0 ]; then
-    echo "Network error: Unable to fetch release data from https://get.opensuse.org/api/v0/distributions.json"
+    echo "Network error: Unable to fetch release data from $API_URL"
     echo "Ensure that you have working network connectivity and get.opensuse.org is accessible."
-    exit 3
+    echo "Trying local fallback distributions.json ..."
+    if [ -f "$SCRIPT_DIR/distributions.json" ]; then
+        echo "[INFO] Using $SCRIPT_DIR/distributions.json"
+        API_DATA=$(cat "$SCRIPT_DIR/distributions.json")
+    elif [ -f "/usr/share/opensuse-migration-tool/distributions.json" ]; then
+        echo "[INFO] Using /usr/share/opensuse-migration-tool/distributions.json"
+        API_DATA=$(cat "/usr/share/opensuse-migration-tool/distributions.json")
+    else
+        echo "No local distributions.json found. Cannot continue."
+        exit 3
+    fi
 fi
 DRYRUN=""
 TMP_REPO_NAME="tmp-migration-tool-repo" # tmp repo to get sles-release or openSUSE-repos-*
@@ -113,7 +123,7 @@ export DRYRUN
 function fetch_versions() {
     local filter="$1"
     local key="$2"
-    jq -r ".${key}[] | select(${filter}) | .version" <<<"$API_DATA"
+    jq -r ".${key}[] | select(${filter}) | .version + \"|\" + .state" <<<"$API_DATA"
 }
 function populate_options() {
     local key="$1"
@@ -124,10 +134,14 @@ function populate_options() {
     local versions
 
     versions=$(fetch_versions "$filter" "$key")
-    while IFS= read -r version; do
+    while IFS="|" read -r version state; do
         if (( $(bc <<<"$current_version < $version") )); then
             if [[ -z "$min_version" ]] || (( $(bc <<<"$version >= $min_version") )); then
-                MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE $key $version$suffix"
+                local state_suffix=""
+                if [[ "$state" != "Stable" ]]; then
+                    state_suffix=" [$state]"
+                fi
+                MIGRATION_OPTIONS["$CURRENT_INDEX"]="openSUSE $key $version${state_suffix}$suffix"
                 MIGRATION_RAW["$CURRENT_INDEX"]="$version"
                 ((CURRENT_INDEX++))
             fi

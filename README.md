@@ -179,6 +179,22 @@ osc sr openSUSE:Factory opensuse-migration-tool openSUSE:Leap:15.6:Update
 
 ---
 
+## 🗂️ Keeping `distributions.json` Up to Date
+
+The `distributions.json` file in the repository root is a local fallback used when `get.opensuse.org` is unreachable (e.g. offline development, network outage). It mirrors the data served by the [get.opensuse.org API](https://get.opensuse.org/api/v0/distributions.json).
+
+**This file must be updated whenever a Leap milestone changes state** — for example when Leap 16.1 moves from Alpha → Beta → RC → Stable, or when a new version is added or reaches EOL.
+
+To update it:
+
+```bash
+curl -s https://get.opensuse.org/api/v0/distributions.json | jq . > distributions.json
+```
+
+Commit the updated file alongside any release-related changes.
+
+---
+
 ## 🤝 Contributions Welcome!
 
 We're happy to receive PRs, testing reports, or feedback on supported scenarios.
