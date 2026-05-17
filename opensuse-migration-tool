@@ -86,8 +86,11 @@ if [[ ! -f /etc/os-release ]]; then
     exit 2
 fi
 # Source OS release info
+# shellcheck disable=SC1091
 # shellcheck source=/etc/os-release
 source /etc/os-release
+NAME=${NAME:-}
+VERSION=${VERSION:-}
 ARCH=$(uname -i) # x86_64 XXX: check for other arches
 
 # Fetch distribution data from API
