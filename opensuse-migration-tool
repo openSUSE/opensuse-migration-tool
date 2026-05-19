@@ -63,9 +63,11 @@ for tool in "${REQUIRED_TOOLS[@]}"; do
     fi
 done
 
-if [[ -n "${DIALOGCMD:-}" ]] && command -v "$DIALOGCMD" >/dev/null 2>&1; then
-    DIALOGCMD=$(command -v "$DIALOGCMD")
-elif DIALOGCMD=$(command -v susedialog 2>/dev/null); then
+# Only auto-detect susedialog or dialog, ignore untrusted DIALOGCMD env var from users
+# This prevents privilege escalation via sudo DIALOGCMD injection
+unset DIALOGCMD
+
+if DIALOGCMD=$(command -v susedialog 2>/dev/null); then
     :
 elif DIALOGCMD=$(command -v dialog 2>/dev/null); then
     :
@@ -188,7 +190,9 @@ function check_x86_64_v2_support() {
 # Elevated permissions check unless DRYRUN is set
 if [ -z "${DRYRUN:-}" ]; then
     if [ "$EUID" -ne 0 ]; then
-        exec sudo DIALOGCMD="$DIALOGCMD" "$0" "$@"
+        # Re-run with sudo, let the elevated script re-detect DIALOGCMD
+        # This prevents environment variable injection attacks
+        exec sudo "$0" "$@"
     fi
 
 	# Requires elevated permissions or test will always fail
