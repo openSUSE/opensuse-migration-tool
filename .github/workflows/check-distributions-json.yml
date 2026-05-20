@@ -13,17 +13,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -sf https://get.opensuse.org/api/v0/distributions.json | jq --sort-keys . > /tmp/live.json
+          # Track all releases that expose "state" (future-proof), while Leap/Leap Micro
+          # are the most relevant migration targets today.
+          curl -sf https://get.opensuse.org/api/v0/distributions.json \
+            | jq --sort-keys 'with_entries(.value |= map(select(has("state"))))' > /tmp/live.json
 
       - name: Normalize local distributions.json
-        run: jq --sort-keys . distributions.json > /tmp/local.json
+        run: jq --sort-keys 'with_entries(.value |= map(select(has("state"))))' distributions.json > /tmp/local.json
 
-      - name: Diff local vs live
+      - name: Diff local vs live (stateful releases only)
         run: |
           if ! diff -u /tmp/local.json /tmp/live.json; then
             echo ""
-            echo "::error::distributions.json is out of date."
+            echo "::error::distributions.json stateful releases are out of date."
             echo "Run: curl -s https://get.opensuse.org/api/v0/distributions.json | jq . > distributions.json"
             exit 1
           fi
-          echo "distributions.json is up to date."
+          echo "distributions.json stateful releases are up to date."
