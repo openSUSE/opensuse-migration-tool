@@ -136,6 +136,53 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 export DRYRUN
+
+# Run "zypper dup" and show its output in a dialog box.
+#   run_dup [zypper global options] -- [zypper dup options]
+# The first attempt is non-interactive (-y). If it fails, zypper is run again
+# in the terminal without -y so that it can ask questions.
+# Returns the exit status of the last zypper run.
+function run_dup() {
+    local global=()
+    while [[ $# -gt 0 && "$1" != "--" ]]; do
+        global+=("$1")
+        shift
+    done
+    shift # the "--"
+    local opts=("$@")
+
+    if [[ -n "$DRYRUN" ]]; then
+        $DRYRUN zypper "${global[@]}" dup -y "${opts[@]}"
+        return 0
+    fi
+
+    local status
+    if [[ -t 1 ]]; then
+        # The log is kept because the dialog disappears as soon as zypper fails.
+        local log
+        log=$(mktemp)
+        # The status of a pipeline is the one of its last command (dialog), so
+        # take the one of zypper from PIPESTATUS.
+        zypper "${global[@]}" dup -y "${opts[@]}" 2>&1 | tee "$log" \
+            | $DIALOGCMD --title "System Migration" --programbox "Running zypper dup ..." 20 100
+        status=${PIPESTATUS[0]}
+        if [[ $status -ne 0 ]]; then
+            clear
+            echo "[WARN] zypper dup failed (exit status $status), see $log"
+            echo "[INFO] Running zypper dup again, this time interactively."
+        fi
+    else
+        zypper "${global[@]}" dup -y "${opts[@]}"
+        status=$?
+    fi
+
+    if [[ $status -ne 0 ]]; then
+        # re-run zypper dup as interactive in case of failure in non-interactive mode
+        zypper "${global[@]}" dup "${opts[@]}"
+        status=$?
+    fi
+    return $status
+}
 # Populate migration options
 function fetch_versions() {
     local filter="$1"
@@ -401,9 +448,7 @@ EOL
 	        $DRYRUN suseconnect -e "$EMAIL" -r "$REGCODE"
 	        $DRYRUN SUSEConnect -p "PackageHub/$VERSION/$ARCH"
 
-            if ! $DRYRUN zypper dup -y --force-resolution --allow-vendor-change --download in-advance; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper dup --force-resolution --allow-vendor-change --download in-advance 
-            fi
+            run_dup -- --force-resolution --allow-vendor-change --download in-advance
 
 
             $DRYRUN rpm -e --nodeps branding-openSUSE grub2-branding-openSUSE wallpaper-branding-openSUSE plymouth-branding-openSUSE systemd-presets-branding-openSUSE systemd-presets-branding-MicroOS
@@ -429,9 +474,7 @@ EOL
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refresh-services # !Important! make sure that all repo files under index service were regenerated
             
-            if ! $DRYRUN zypper dup -y --force-resolution --allow-vendor-change --download in-advance; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper dup --force-resolution --allow-vendor-change --download in-advance 
-            fi
+            run_dup -- --force-resolution --allow-vendor-change --download in-advance
 
             ;;
         "openSUSE Tumbleweed-Slowroll")
@@ -447,9 +490,7 @@ EOL
             $DRYRUN zypper refresh-services # !Important! make sure that all repo files under index service were regenerated
 
             # --allow-downgrade is important in case that you choose Tumblweed -> Slowroll migration
-            if ! $DRYRUN zypper dup -y --force-resolution --allow-downgrade --allow-vendor-change --download in-advance; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper dup --force-resolution --allow-downgrade --allow-vendor-change --download in-advance
-            fi
+            run_dup -- --force-resolution --allow-downgrade --allow-vendor-change --download in-advance
             ;;
         *"openSUSE LeapMicro"*)
             # Has to be before Leap*
@@ -461,9 +502,7 @@ EOL
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refresh-services # !Important! make sure that all repo files under index service were regenerated
 
-            if ! $DRYRUN zypper --releasever "$TARGET_VER" dup -y --force-resolution --allow-vendor-change --download in-advance; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper --releasever "$TARGET_VER" dup --force-resolution --allow-vendor-change --download in-advance 
-            fi
+            run_dup --releasever "$TARGET_VER" -- --force-resolution --allow-vendor-change --download in-advance
             ;;
         *"openSUSE Leap"*)
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
@@ -482,9 +521,7 @@ EOL
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refresh-services # !Important! make sure that all repo files under index service were regenerated
 
-            if ! $DRYRUN zypper --releasever "$TARGET_VER" dup -y --force-resolution --allow-vendor-change --download-in-advance; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper --releasever "$TARGET_VER" dup --force-resolution --allow-vendor-change --download-in-advance
-            fi
+            run_dup --releasever "$TARGET_VER" -- --force-resolution --allow-vendor-change --download-in-advance
             ;;
         *"MicroOS-Slowroll"*)
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
@@ -503,9 +540,7 @@ EOL
             $DRYRUN zypper refresh-services # !Important! make sure that all repo files under index service were regenerated
 
             # --allow-downgrade is important in case that you choose MicroOS -> MicroOS-Slowroll migration
-            if ! $DRYRUN zypper dup -y --force-resolution --allow-downgrade --allow-vendor-change --download in-advance; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper dup --force-resolution --allow-downgrade --allow-vendor-change --download in-advance
-            fi
+            run_dup -- --force-resolution --allow-downgrade --allow-vendor-change --download in-advance
             ;;
         *"MicroOS"*)
             $DRYRUN echo "Upgrading to ${MIGRATION_OPTIONS[$CHOICE]}"
@@ -525,9 +560,7 @@ EOL
             $DRYRUN zypper removerepo $TMP_REPO_NAME # drop the temp repo, we have now definitions of all repos we need
             $DRYRUN zypper refresh-services # !Important! make sure that all repo files under index service were regenerated
             
-            if ! $DRYRUN zypper dup -y --force-resolution --allow-vendor-change --download in-advance; then # re-run zypper dup as interactive in case of failure in non-interactive mode
-                $DRYRUN zypper dup --force-resolution --allow-vendor-change --download in-advance 
-            fi
+            run_dup -- --force-resolution --allow-vendor-change --download in-advance
             ;;
     esac
 else
